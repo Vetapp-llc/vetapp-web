@@ -1,0 +1,52 @@
+{
+  "common": {
+    "appName": "VetApp",
+    "login": "Login",
+    "dashboard": "Dashboard",
+    "welcome": "Welcome"
+  },
+  "login": {
+    "title": "Welcome back",
+    "subtitle": "Sign in to your VetApp account",
+    "email": "Email",
+    "emailPlaceholder": "you@clinic.com",
+    "password": "Password",
+    "passwordPlaceholder": "Enter your password",
+    "submit": "Sign in",
+    "submitting": "Signing in…",
+    "errorInvalid": "Invalid email or password",
+    "errorGeneric": "Something went wrong. Please try again.",
+    "backToHome": "Back to home"
+  },
+  "landing": {
+    "badge": "Veterinary Clinic Platform",
+    "heroTitle1": "The future of",
+    "heroTitle2": "veterinary",
+    "heroTitle3": "practice",
+    "heroDesc": "A complete platform for clinics — manage patients, schedule visits, and track vaccinations. Plus a dedicated app for your clients.",
+    "getStarted": "Get Started Free",
+    "logIn": "Log in",
+    "iosApp": "iOS App",
+    "patientRecords": "Patient Records",
+    "patientRecordsTitle1": "Every patient,",
+    "patientRecordsTitle2": "fully documented.",
+    "patientRecordsDesc": "Breed, weight, allergies, complete medical history — digital profiles for every animal in your care. Always accessible, always current.",
+    "scheduling": "Smart Scheduling",
+    "schedulingTitle1": "Your calendar,",
+    "schedulingTitle2": "optimized.",
+    "schedulingDesc": "Manage bookings, send automated reminders, and let clients schedule online. Your clinic's time, simplified.",
+    "vaccination": "Vaccination Management",
+    "vaccinationTitle1": "Every vaccine,",
+    "vaccinationTitle2": "on schedule.",
+    "vaccinationDesc": "Automated vaccination schedules with compliance tracking and timely alerts. No patient falls through the cracks.",
+    "clientApp": "Client Mobile App",
+    "clientAppTitle1": "Your clients",
+    "clientAppTitle2": "stay connected.",
+    "clientAppDesc": "Pet owners get their own app to view records, book appointments, and receive vaccine reminders — synced with your clinic in real time.",
+    "appStore": "Available on the App Store",
+    "ctaTitle1": "Modernize your",
+    "ctaTitle2": "practice.",
+    "ctaDesc": "Join veterinary clinics using VetApp to deliver better care and keep clients connected.",
+    "downloadIos": "Download iOS App"
+  }
+}

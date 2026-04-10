@@ -23,3 +23,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Generated API types from swagger
+src/lib/types/api.generated.ts

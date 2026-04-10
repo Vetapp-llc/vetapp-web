@@ -40,6 +40,17 @@ export default function LoginPage() {
         localStorage.setItem("refresh_token", data.refreshToken);
       }
 
+      // Store full session for clinic data browsing
+      localStorage.setItem(
+        "vetapp-session",
+        JSON.stringify({
+          accessToken: data.access_token,
+          refreshToken: data.refreshToken,
+          user: data.user,
+          clinic: data.clinic ?? null,
+        }),
+      );
+
       return { error: "", success: true };
     } catch {
       return { error: t("errorGeneric"), success: false };

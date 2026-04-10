@@ -7,6 +7,9 @@ const nextConfig: NextConfig = {
   images: {
     unoptimized: true,
   },
+  experimental: {
+    reactCompiler: false,
+  },
 };
 
 export default withNextIntl(nextConfig);

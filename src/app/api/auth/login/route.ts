@@ -46,7 +46,7 @@ export async function POST(request: NextRequest) {
       clinic: {
         zip: payload.zip ?? "",
         companyName: payload.company_name ?? "",
-        groupId: payload.group_id ?? "",
+        groupId: String(payload.group_id ?? ""),
       },
     });
   } catch (error) {

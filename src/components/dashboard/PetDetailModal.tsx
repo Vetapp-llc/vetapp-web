@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useTranslations, useLocale } from "next-intl";
 import { usePetDetail } from "@/lib/hooks/useClinicData";
 import { localizeProcedureType, localizeSpeciesValue, localizeSex } from "@/lib/utils/localize";
+import { VisitBuilder } from "./VisitBuilder";
 import type { MedicalRecord } from "@/lib/types/api";
 
 const PROCEDURE_COLORS: Record<string, string> = {
@@ -80,8 +81,8 @@ function LoadingSkeleton() {
 /* ─── Record Card ─── */
 function RecordCard({ record, locale, t }: { record: MedicalRecord; locale: string; t: ReturnType<typeof useTranslations<"clinic">> }) {
   const [expanded, setExpanded] = useState(false);
-  const localizedType = localizeProcedureType(record.procedureType ?? "", locale);
-  const badgeColor = getBadgeColor(record.procedureType ?? "") || getBadgeColor(localizedType);
+  const localizedType = localizeProcedureType(record.procedureType, locale);
+  const badgeColor = getBadgeColor(record.procedureType) || getBadgeColor(localizedType);
 
   return (
     <div className="rounded-xl border border-gray-100 bg-white transition-all hover:shadow-[0_2px_12px_rgba(0,0,0,0.04)]">
@@ -135,21 +136,21 @@ function RecordCard({ record, locale, t }: { record: MedicalRecord; locale: stri
               <p className="text-primary-dark">{renderTextWithBreaks(record.comment)}</p>
             </div>
           )}
-          {(record.vaccinations?.length ?? 0) > 0 && (
+          {record.vaccinations.length > 0 && (
             <div>
               <span className="text-xs font-semibold uppercase text-foreground-muted/50">{t("vaccinesGiven")}</span>
               <div className="mt-1 flex flex-wrap gap-1.5">
-                {(record.vaccinations ?? []).map((v, i) => (
+                {record.vaccinations.map((v, i) => (
                   <span key={i} className="rounded-lg bg-emerald-50 border border-emerald-200 px-2 py-0.5 text-xs text-emerald-700">{v}</span>
                 ))}
               </div>
             </div>
           )}
-          {(record.tests?.length ?? 0) > 0 && (
+          {record.tests.length > 0 && (
             <div>
               <span className="text-xs font-semibold uppercase text-foreground-muted/50">{t("tests")}</span>
               <div className="mt-1 flex flex-wrap gap-1.5">
-                {(record.tests ?? []).map((v, i) => (
+                {record.tests.map((v, i) => (
                   <span key={i} className="rounded-lg bg-indigo-50 border border-indigo-200 px-2 py-0.5 text-xs text-indigo-700">{v}</span>
                 ))}
               </div>
@@ -174,6 +175,7 @@ export function PetDetailModal({ open, petId, onClose, onViewOwner }: PetDetailM
   const locale = useLocale();
   const { data: pet, isLoading } = usePetDetail(open ? petId : null);
   const [filterType, setFilterType] = useState<string>("all");
+  const [visitBuilderOpen, setVisitBuilderOpen] = useState(false);
 
   useEffect(() => {
     if (open) document.body.style.overflow = "hidden";
@@ -184,7 +186,7 @@ export function PetDetailModal({ open, petId, onClose, onViewOwner }: PetDetailM
   if (!open) return null;
 
   // Get unique procedure types for filter tabs
-  const records = pet?.medicalRecords ?? [];
+  const records = pet?.medicalRecords || [];
   const procedureTypes = pet
     ? [...new Set(records.map((r) => r.procedureType).filter(Boolean))]
     : [];
@@ -214,17 +216,28 @@ export function PetDetailModal({ open, petId, onClose, onViewOwner }: PetDetailM
             <div className="bg-gradient-to-r from-primary/5 to-transparent px-6 pt-6 pb-5">
               <div className="flex items-center gap-4">
                 <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-primary text-2xl">
-                  {pet.species?.toLowerCase().includes("ძაღლ") || pet.species?.toLowerCase() === "dog" ? "🐕" : pet.species?.toLowerCase().includes("კატ") || pet.species?.toLowerCase() === "cat" ? "🐈" : "🐾"}
+                  {pet.species.toLowerCase().includes("ძაღლ") || pet.species.toLowerCase() === "dog" ? "🐕" : pet.species.toLowerCase().includes("კატ") || pet.species.toLowerCase() === "cat" ? "🐈" : "🐾"}
                 </div>
                 <div>
                   <h2 className="text-xl font-bold text-primary-dark">{pet.name}</h2>
                   <p className="text-sm text-foreground-muted/60">
-                    {localizeSpeciesValue(pet.species ?? "", locale)}
+                    {localizeSpeciesValue(pet.species, locale)}
                     {pet.breed ? ` · ${pet.breed}` : ""}
                     {pet.sex ? ` · ${localizeSex(pet.sex, locale)}` : ""}
                   </p>
                 </div>
               </div>
+
+              {/* New Visit button */}
+              <button
+                onClick={() => setVisitBuilderOpen(true)}
+                className="mt-3 inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-xs font-bold text-white hover:bg-primary/90 transition-colors cursor-pointer"
+              >
+                <svg className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
+                </svg>
+                {t("newVisit")}
+              </button>
 
               {/* Pet info grid */}
               <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -305,14 +318,14 @@ export function PetDetailModal({ open, petId, onClose, onViewOwner }: PetDetailM
                     return (
                       <button
                         key={type}
-                        onClick={() => setFilterType(type ?? "all")}
+                        onClick={() => setFilterType(type)}
                         className={`rounded-lg px-2.5 py-1 text-xs font-medium transition-all cursor-pointer ${
                           filterType === type
                             ? "bg-primary text-white"
                             : "bg-gray-100 text-foreground-muted hover:bg-gray-200"
                         }`}
                       >
-                        {localizeProcedureType(type ?? "", locale)} ({count})
+                        {localizeProcedureType(type, locale)} ({count})
                       </button>
                     );
                   })}
@@ -332,6 +345,19 @@ export function PetDetailModal({ open, petId, onClose, onViewOwner }: PetDetailM
               )}
             </div>
           </div>
+        )}
+
+        {/* Visit Builder overlay */}
+        {visitBuilderOpen && pet && (
+          <VisitBuilder
+            petId={pet.id?.toString() ?? petId ?? ""}
+            petName={pet.name ?? ""}
+            ownerPersonalId={pet.ownerPersonalId ?? ""}
+            ownerName={pet.ownerName ?? ""}
+            ownerPhone={pet.ownerPhone ?? ""}
+            onClose={() => setVisitBuilderOpen(false)}
+            onSuccess={() => setVisitBuilderOpen(false)}
+          />
         )}
       </div>
     </div>

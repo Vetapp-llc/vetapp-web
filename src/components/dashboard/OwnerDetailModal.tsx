@@ -96,16 +96,16 @@ export function OwnerDetailModal({ open, personalId, onClose, onViewPet }: Owner
             <div className="px-6 pb-6">
               <h3 className="mb-3 text-sm font-bold text-primary-dark">
                 {t("pets")}
-                <span className="ml-1.5 text-foreground-muted/40 font-normal">({owner.pets?.length ?? 0})</span>
+                <span className="ml-1.5 text-foreground-muted/40 font-normal">({owner.pets.length})</span>
               </h3>
 
-              {!owner.pets?.length ? (
+              {!owner.pets.length ? (
                 <div className="rounded-xl border-2 border-dashed border-gray-200 py-8 text-center">
                   <p className="text-sm text-foreground-muted/50">{t("noPets")}</p>
                 </div>
               ) : (
                 <div className="grid gap-2 sm:grid-cols-2">
-                  {(owner.pets ?? []).map((pet) => (
+                  {owner.pets.map((pet) => (
                     <button
                       key={pet.id}
                       onClick={() => onViewPet(String(pet.id))}
@@ -113,12 +113,12 @@ export function OwnerDetailModal({ open, personalId, onClose, onViewPet }: Owner
                     >
                       <div className="flex items-center gap-3">
                         <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-lg transition-colors group-hover:bg-primary group-hover:text-white">
-                          {pet.species?.toLowerCase().includes("ძაღლ") || pet.species?.toLowerCase() === "dog" ? "🐕" : pet.species?.toLowerCase().includes("კატ") || pet.species?.toLowerCase() === "cat" ? "🐈" : "🐾"}
+                          {pet.species.toLowerCase().includes("ძაღლ") || pet.species.toLowerCase() === "dog" ? "🐕" : pet.species.toLowerCase().includes("კატ") || pet.species.toLowerCase() === "cat" ? "🐈" : "🐾"}
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-bold text-primary-dark">{pet.name}</p>
                           <p className="text-xs text-foreground-muted/50 truncate">
-                            {localizeSpeciesValue(pet.species ?? "", locale)}
+                            {localizeSpeciesValue(pet.species, locale)}
                             {pet.breed ? ` · ${pet.breed}` : ""}
                             {pet.sex ? ` · ${localizeSex(pet.sex, locale)}` : ""}
                           </p>

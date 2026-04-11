@@ -47,6 +47,9 @@ export type VaccineOptionsResponse = Schemas["internal_handlers.VaccineOptionsRe
 export type EctoOptionsResponse = Schemas["internal_handlers.EctoOptionsResponse"];
 
 export type CreateProcedureRequest = Schemas["internal_handlers.CreateProcedureRequest"];
+export type RecordPaymentRequest = Schemas["internal_handlers.RecordPaymentRequest"];
+export type PaymentResponse = Schemas["internal_handlers.PaymentResponse"];
+export type PriceResponse = Schemas["internal_handlers.PriceResponse"];
 
 // Phase 5 types
 export type OTPSendRequest = Schemas["internal_handlers.OTPSendRequest"];
@@ -54,7 +57,10 @@ export type OTPSendResponse = Schemas["internal_handlers.OTPSendResponse"];
 export type OTPVerifyRequest = Schemas["internal_handlers.OTPVerifyRequest"];
 export type OTPVerifyResponse = Schemas["internal_handlers.OTPVerifyResponse"];
 export type PasswordResetRequest = Schemas["internal_handlers.PasswordResetRequest"];
-export type AdminStats = Schemas["internal_handlers.AdminStats"];
+// Override generated AdminStats to include company_name added to ClinicPetCount
+export type AdminStats = Omit<Schemas["internal_handlers.AdminStats"], "pets_per_clinic"> & {
+  pets_per_clinic: (Schemas["internal_handlers.ClinicPetCount"] & { company_name?: string })[];
+};
 export type PackageResponse = Schemas["internal_handlers.PackageResponse"];
 export type CheckoutRequest = Schemas["internal_handlers.CheckoutRequest"];
 export type CheckoutResponse = Schemas["internal_handlers.CheckoutResponse"];
@@ -79,6 +85,47 @@ export interface AuthUser {
   id: string | number;
   email: string;
   name: string;
+}
+
+export interface ProcedureTypeRevenue {
+  tp: number;
+  tpname: string;
+  count: number;
+  total: string;
+}
+
+export interface DailyClinicStats {
+  date: string;
+  card: string;
+  cash: string;
+  total: string;
+  procedures: ProcedureTypeRevenue[];
+}
+
+export interface DailyTotal {
+  date: string;
+  total: string;
+  count: number;
+}
+
+export interface MonthlyClinicStats {
+  month: string;
+  total: string;
+  procedures: ProcedureTypeRevenue[];
+  dailyBreakdown: DailyTotal[];
+}
+
+export interface MonthlyTotal {
+  month: string;
+  total: string;
+  count: number;
+}
+
+export interface YearlyClinicStats {
+  year: string;
+  total: string;
+  procedures: ProcedureTypeRevenue[];
+  monthlyBreakdown: MonthlyTotal[];
 }
 
 export interface Operation {

@@ -13,6 +13,7 @@ import {
   HorizontalBarChart,
   Section,
 } from "@/components/dashboard/shared";
+import type { ClinicStats } from "@/lib/types/api";
 
 /* ─── Clinic Drill-down View ─── */
 function ClinicDrillDown({
@@ -74,7 +75,7 @@ function ClinicDrillDown({
           <div className="grid gap-5 md:grid-cols-2">
             <Section title={tc("speciesBreakdown")}>
               <DonutChart
-                data={stats.speciesBreakdown.map((s) => ({
+                data={(stats as ClinicStats).speciesBreakdown.map((s: { species: string; count: number }) => ({
                   label: s.species || "—",
                   value: s.count,
                 }))}
@@ -83,7 +84,7 @@ function ClinicDrillDown({
             </Section>
             <Section title={tc("sexDistribution")}>
               <HorizontalBarChart
-                data={stats.sexDistribution.map((s) => ({
+                data={(stats as ClinicStats).sexDistribution.map((s: { sex: string; count: number }) => ({
                   label: s.sex || "—",
                   value: s.count,
                 }))}
@@ -94,7 +95,7 @@ function ClinicDrillDown({
 
           <Section title={tc("topBreeds")}>
             <HorizontalBarChart
-              data={stats.topBreeds.map((b) => ({
+              data={(stats as ClinicStats).topBreeds.map((b: { breed: string; count: number }) => ({
                 label: b.breed,
                 value: b.count,
               }))}
@@ -104,7 +105,7 @@ function ClinicDrillDown({
           <Section title={tc("topProcedures")}>
             {stats.topProcedures.length > 0 ? (
               <HorizontalBarChart
-                data={stats.topProcedures.map((p) => ({
+                data={stats.topProcedures.map((p: { name?: string; type?: string; count: number }) => ({
                   label: p.name || p.type || "—",
                   value: p.count,
                 }))}
@@ -186,7 +187,7 @@ function SystemOverview({
       <Section title={t("clinics")}>
         {stats.pets_per_clinic && stats.pets_per_clinic.length > 0 ? (
           <div className="space-y-1">
-            {stats.pets_per_clinic.map((c) => (
+            {stats.pets_per_clinic.map((c: { clinic: string; count: number; company_name?: string }) => (
               <button
                 key={c.clinic}
                 onClick={() => onSelectClinic(c.clinic, c.company_name ?? "")}
@@ -226,7 +227,7 @@ function SystemOverview({
       {stats.payment_tiers && stats.payment_tiers.length > 0 && (
         <Section title={t("paymentTiers")}>
           <HorizontalBarChart
-            data={stats.payment_tiers.map((tier) => ({
+            data={stats.payment_tiers.map((tier: { price: string; count: number }) => ({
               label: `${tier.price} ₾`,
               value: tier.count,
             }))}

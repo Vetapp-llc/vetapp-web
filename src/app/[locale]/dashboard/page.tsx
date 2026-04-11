@@ -543,6 +543,7 @@ function AddOwnerPetModal({ open, onClose, onCreated, prefillId }: { open: boole
   // Validation helpers
   const DIGITS_ONLY = /^\d+$/;
   const LETTERS_SPACES = /^[\p{L}\s]+$/u;
+  const LETTERS_SPACES_PUNCT = /^[\p{L}\s\-.,/()]+$/u; // for color/pattern: "შავ-თეთრი ლაქიანი"
   const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
   const errors: Record<string, string | undefined> = {
@@ -551,13 +552,13 @@ function AddOwnerPetModal({ open, onClose, onCreated, prefillId }: { open: boole
     phone: !phone.trim() ? t("required") : !DIGITS_ONLY.test(phone.trim()) ? t("validationPhoneDigits") : undefined,
     email: email.trim() && !EMAIL_RE.test(email.trim()) ? t("validationEmailInvalid") : undefined,
     address: !address.trim() ? t("required") : undefined,
-    petName: !petName.trim() ? t("required") : undefined,
+    petName: !petName.trim() ? t("required") : !LETTERS_SPACES.test(petName.trim()) ? t("validationNameLetters") : undefined,
     species: !species ? t("required") : undefined,
-    customSpecies: species === "other" && !customSpecies.trim() ? t("required") : undefined,
+    customSpecies: species === "other" && !customSpecies.trim() ? t("required") : species === "other" && customSpecies.trim() && !LETTERS_SPACES.test(customSpecies.trim()) ? t("validationNameLetters") : undefined,
     variety: !variety.trim() ? t("required") : undefined,
     sex: !sex ? t("required") : undefined,
     chip: chip.trim() && !DIGITS_ONLY.test(chip.trim()) ? t("validationChipDigits") : undefined,
-    color: !color.trim() ? t("required") : undefined,
+    color: !color.trim() ? t("required") : !LETTERS_SPACES_PUNCT.test(color.trim()) ? t("validationNameLetters") : undefined,
     birthDate: !birthDate ? t("required") : undefined,
     petStatus: !petStatus ? t("required") : undefined,
   };

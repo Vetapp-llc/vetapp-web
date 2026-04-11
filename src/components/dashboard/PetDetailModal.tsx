@@ -140,7 +140,7 @@ function RecordCard({ record, locale, t }: { record: MedicalRecord; locale: stri
             <div>
               <span className="text-xs font-semibold uppercase text-foreground-muted/50">{t("vaccinesGiven")}</span>
               <div className="mt-1 flex flex-wrap gap-1.5">
-                {record.vaccinations.map((v, i) => (
+                {record.vaccinations.map((v: string, i: number) => (
                   <span key={i} className="rounded-lg bg-emerald-50 border border-emerald-200 px-2 py-0.5 text-xs text-emerald-700">{v}</span>
                 ))}
               </div>
@@ -150,7 +150,7 @@ function RecordCard({ record, locale, t }: { record: MedicalRecord; locale: stri
             <div>
               <span className="text-xs font-semibold uppercase text-foreground-muted/50">{t("tests")}</span>
               <div className="mt-1 flex flex-wrap gap-1.5">
-                {record.tests.map((v, i) => (
+                {record.tests.map((v: string, i: number) => (
                   <span key={i} className="rounded-lg bg-indigo-50 border border-indigo-200 px-2 py-0.5 text-xs text-indigo-700">{v}</span>
                 ))}
               </div>
@@ -186,15 +186,15 @@ export function PetDetailModal({ open, petId, onClose, onViewOwner }: PetDetailM
   if (!open) return null;
 
   // Get unique procedure types for filter tabs
-  const records = pet?.medicalRecords || [];
-  const procedureTypes = pet
-    ? [...new Set(records.map((r) => r.procedureType).filter(Boolean))]
+  const records: MedicalRecord[] = pet?.medicalRecords || [];
+  const procedureTypes: string[] = pet
+    ? [...new Set(records.map((r: MedicalRecord) => r.procedureType).filter(Boolean))]
     : [];
 
   const filteredRecords: MedicalRecord[] = pet
     ? filterType === "all"
       ? records
-      : records.filter((r) => r.procedureType === filterType)
+      : records.filter((r: MedicalRecord) => r.procedureType === filterType)
     : [];
 
   return (
@@ -313,8 +313,8 @@ export function PetDetailModal({ open, petId, onClose, onViewOwner }: PetDetailM
                   >
                     {t("all")} ({records.length})
                   </button>
-                  {procedureTypes.map((type) => {
-                    const count = records.filter((r) => r.procedureType === type).length;
+                  {procedureTypes.map((type: string) => {
+                    const count = records.filter((r: MedicalRecord) => r.procedureType === type).length;
                     return (
                       <button
                         key={type}
@@ -338,7 +338,7 @@ export function PetDetailModal({ open, petId, onClose, onViewOwner }: PetDetailM
                 </div>
               ) : (
                 <div className="space-y-2">
-                  {filteredRecords.map((record) => (
+                  {filteredRecords.map((record: MedicalRecord) => (
                     <RecordCard key={record.id} record={record} locale={locale} t={t} />
                   ))}
                 </div>

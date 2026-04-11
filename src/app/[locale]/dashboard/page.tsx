@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { useTranslations, useLocale } from "next-intl";
 import { usePets, useOwners, useClinicStats } from "@/lib/hooks/useClinicData";
+import type { PetListItem, Owner } from "@/lib/types/api";
 import { StatsTab } from "@/components/dashboard/StatsTab";
 import { AdminDashboard } from "@/components/dashboard/AdminDashboard";
 import { localizeSpeciesValue, localizeSex } from "@/lib/utils/localize";
@@ -76,7 +77,7 @@ function PetsTab({ onViewPet }: { onViewPet: (id: string) => void }) {
             {t("totalResults", { count: data.total })}
           </p>
           <div className="space-y-2">
-            {data.data.map((pet) => (
+            {data.data.map((pet: PetListItem) => (
               <button
                 key={pet.id}
                 onClick={() => onViewPet(String(pet.id))}
@@ -175,7 +176,7 @@ function OwnersTab({ onViewOwner }: { onViewOwner: (personalId: string) => void 
             {t("totalResults", { count: data.total })}
           </p>
           <div className="space-y-2">
-            {data.data.map((owner) => (
+            {data.data.map((owner: Owner) => (
               <button
                 key={owner.personalId}
                 onClick={() => onViewOwner(owner.personalId)}
@@ -286,7 +287,7 @@ function SearchTab({ onViewOwner, onAdd }: { onViewOwner: (personalId: string) =
             {tc("totalResults", { count: data.total })}
           </p>
           <div className="space-y-2">
-            {data.data.map((owner) => (
+            {data.data.map((owner: Owner) => (
               <button
                 key={owner.personalId}
                 onClick={() => onViewOwner(owner.personalId)}
@@ -400,7 +401,7 @@ function WideSearchTab({ onViewOwner }: { onViewOwner: (personalId: string) => v
             {tc("totalResults", { count: data.total })}
           </p>
           <div className="space-y-2">
-            {data.data.map((owner) => (
+            {data.data.map((owner: Owner) => (
               <button
                 key={owner.personalId}
                 onClick={() => onViewOwner(owner.personalId)}
@@ -458,13 +459,13 @@ function BreedCombobox({ species, value, onChange, locale, className, required, 
 
   const breeds = useMemo(() => {
     const list = species === "dog" ? breedsData.dogBreeds : species === "cat" ? breedsData.catBreeds : [];
-    return list.map(b => ({ en: b.en, ka: b.ka, display: locale === "ka" ? b.ka : b.en }));
+    return list.map((b: { en: string; ka: string }) => ({ en: b.en, ka: b.ka, display: locale === "ka" ? b.ka : b.en }));
   }, [species, locale]);
 
   const filtered = useMemo(() => {
     if (!query.trim()) return breeds;
     const q = query.toLowerCase();
-    return breeds.filter(b => b.en.toLowerCase().includes(q) || b.ka.toLowerCase().includes(q));
+    return breeds.filter((b: { en: string; ka: string }) => b.en.toLowerCase().includes(q) || b.ka.toLowerCase().includes(q));
   }, [breeds, query]);
 
   useEffect(() => { setQuery(value); }, [value]);
@@ -494,7 +495,7 @@ function BreedCombobox({ species, value, onChange, locale, className, required, 
       />
       {open && filtered.length > 0 && (
         <div className="absolute left-0 right-0 top-full z-50 mt-1 max-h-48 overflow-y-auto rounded-xl bg-white shadow-[0_8px_32px_rgba(0,0,0,0.12)] border border-border/20">
-          {filtered.slice(0, 50).map((b) => (
+          {filtered.slice(0, 50).map((b: { en: string; ka: string; display: string }) => (
             <button
               key={b.en}
               type="button"

@@ -62,7 +62,7 @@ function NavMenuDropdown() {
 
       {open && (
         <div className="absolute right-0 top-11 z-50 w-56 rounded-2xl bg-white py-2 shadow-[0_8px_32px_rgba(0,0,0,0.12)] border border-border/20">
-          {items.map((item) => (
+          {items.map((item: { id: ViewId; label: string; icon: React.ReactNode }) => (
             <button
               key={item.id}
               onClick={() => { setView(item.id); setOpen(false); }}

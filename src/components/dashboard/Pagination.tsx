@@ -34,7 +34,7 @@ export function Pagination({ page, totalPages, onPageChange }: PaginationProps) 
         </svg>
       </button>
 
-      {pages.map((p, i) =>
+      {pages.map((p: number | "...", i: number) =>
         p === "..." ? (
           <span key={`dots-${i}`} className="flex h-9 w-9 items-center justify-center text-xs text-foreground-muted/40">
             ...

@@ -69,7 +69,7 @@ function ProceduresTable({
           </tr>
         </thead>
         <tbody>
-          {procedures.map((p, i) => (
+          {procedures.map((p: { tp: number; tpname: string; count: number; total: string }, i: number) => (
             <tr key={`${p.tp}-${i}`} className="border-t border-surface/30">
               <td className="py-2 px-2 text-primary-dark font-medium truncate max-w-[200px]">
                 {p.tpname || `Type ${p.tp}`}
@@ -210,7 +210,7 @@ function MonthlyView({ clinic }: { clinic?: string }) {
                 {t("dailyBreakdown")}
               </h4>
               <HorizontalBarChart
-                data={data.dailyBreakdown.map((d) => ({
+                data={data.dailyBreakdown.map((d: { date: string; total: string }) => ({
                   label: d.date,
                   value: Number(d.total) || 0,
                 }))}
@@ -259,7 +259,7 @@ function YearlyView({ clinic }: { clinic?: string }) {
                 {t("monthlyBreakdown")}
               </h4>
               <HorizontalBarChart
-                data={data.monthlyBreakdown.map((m) => ({
+                data={data.monthlyBreakdown.map((m: { month: string; total: string }) => ({
                   label: m.month,
                   value: Number(m.total) || 0,
                 }))}
@@ -289,7 +289,7 @@ export function DailyRevenueSection({ clinic }: { clinic?: string }) {
     <Section title={t("revenue")}>
       {/* Period tabs */}
       <div className="flex gap-1 mb-4 -mt-1 rounded-lg bg-surface/40 p-1 w-fit">
-        {tabs.map((tab) => (
+        {tabs.map((tab: { id: Period; label: string }) => (
           <button
             key={tab.id}
             onClick={() => setPeriod(tab.id)}

@@ -27,7 +27,7 @@ export function StatsTab() {
   }
 
   const trends = stats.monthlyTrends;
-  const maxRecords = Math.max(...trends.map((m) => m.records), 1);
+  const maxRecords = Math.max(...trends.map((m: { month: string; records: number }) => m.records), 1);
 
   return (
     <div className="space-y-5 animate-results-in">
@@ -72,7 +72,7 @@ export function StatsTab() {
       <div className="grid gap-5 md:grid-cols-2">
         <Section title={t("speciesBreakdown")}>
           <DonutChart
-            data={stats.speciesBreakdown.map((s) => ({
+            data={stats.speciesBreakdown.map((s: { species: string; count: number }) => ({
               label: s.species || "—",
               value: s.count,
             }))}
@@ -82,7 +82,7 @@ export function StatsTab() {
 
         <Section title={t("sexDistribution")}>
           <HorizontalBarChart
-            data={stats.sexDistribution.map((s) => ({
+            data={stats.sexDistribution.map((s: { sex: string; count: number }) => ({
               label: s.sex || "—",
               value: s.count,
             }))}
@@ -94,7 +94,7 @@ export function StatsTab() {
       {/* ── Row 3: Top Breeds ── */}
       <Section title={t("topBreeds")}>
         <HorizontalBarChart
-          data={stats.topBreeds.map((b) => ({
+          data={stats.topBreeds.map((b: { breed: string; count: number }) => ({
             label: b.breed,
             value: b.count,
           }))}
@@ -105,7 +105,7 @@ export function StatsTab() {
       <Section title={t("monthlyTrends")}>
         {trends.length > 0 ? (
           <div className="space-y-2">
-            {trends.map((m) => (
+            {trends.map((m: { month: string; records: number }) => (
               <div key={m.month} className="flex items-center gap-3">
                 <span className="w-16 shrink-0 text-xs font-medium text-foreground-muted/60 text-right tabular-nums">
                   {m.month}
@@ -144,7 +144,7 @@ export function StatsTab() {
                   </tr>
                 </thead>
                 <tbody>
-                  {stats.topProcedures.map((p) => (
+                  {stats.topProcedures.map((p: { type?: string; name?: string; count: number }) => (
                     <tr
                       key={`${p.type}-${p.name}`}
                       className="border-t border-surface/30"
@@ -168,7 +168,7 @@ export function StatsTab() {
         <Section title={t("topVaccines")}>
           {stats.topVaccines.length > 0 ? (
             <HorizontalBarChart
-              data={stats.topVaccines.map((v) => ({
+              data={stats.topVaccines.map((v: { name: string; count: number }) => ({
                 label: v.name,
                 value: v.count,
               }))}

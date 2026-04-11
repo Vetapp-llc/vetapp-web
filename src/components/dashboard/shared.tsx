@@ -98,11 +98,11 @@ export function DonutChart({
   data: { label: string; value: number }[];
   colors: string[];
 }) {
-  const total = data.reduce((s, d) => s + d.value, 0);
+  const total = data.reduce((s: number, d: { label: string; value: number }) => s + d.value, 0);
   if (total === 0) return null;
 
   let accumulated = 0;
-  const segments = data.map((d, i) => {
+  const segments = data.map((d: { label: string; value: number }, i: number) => {
     const percentage = (d.value / total) * 100;
     const start = accumulated;
     accumulated += percentage;
@@ -110,7 +110,7 @@ export function DonutChart({
   });
 
   const gradientStops = segments
-    .map((s) => `${s.color} ${s.start}% ${s.start + s.percentage}%`)
+    .map((s: { color: string; start: number; percentage: number }) => `${s.color} ${s.start}% ${s.start + s.percentage}%`)
     .join(", ");
 
   return (
@@ -128,7 +128,7 @@ export function DonutChart({
         </div>
       </div>
       <div className="flex flex-col gap-1.5 min-w-0">
-        {segments.map((s) => (
+        {segments.map((s: { label: string; value: number; percentage: number; start: number; color: string }) => (
           <div key={s.label} className="flex items-center gap-2 min-w-0">
             <div
               className="h-2.5 w-2.5 shrink-0 rounded-full"
@@ -157,10 +157,10 @@ export function HorizontalBarChart({
   color?: string;
   renderValue?: (value: number) => string;
 }) {
-  const max = Math.max(...data.map((d) => d.value), 1);
+  const max = Math.max(...data.map((d: { label: string; value: number }) => d.value), 1);
   return (
     <div className="space-y-2">
-      {data.map((d, i) => (
+      {data.map((d: { label: string; value: number }, i: number) => (
         <div key={`${d.label}-${i}`} className="flex items-center gap-3">
           <span className="shrink-0 text-xs text-foreground-muted/70 text-right">
             {d.label}

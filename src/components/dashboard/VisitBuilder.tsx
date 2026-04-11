@@ -270,12 +270,12 @@ export function VisitBuilder({
   useEffect(() => {
     if (!prices || prices.length === 0) return;
     setVisitData((prev) => {
-      const updated = prev.procedures.map((proc) => {
+      const updated = prev.procedures.map((proc: ProcedureEntry) => {
         if (proc.price && proc.price !== "0") return proc; // already has a price
         const matched = matchPrice(proc.tpname, prices);
         return matched ? { ...proc, price: matched } : proc;
       });
-      if (updated.every((p, i) => p === prev.procedures[i])) return prev; // no changes
+      if (updated.every((p: ProcedureEntry, i: number) => p === prev.procedures[i])) return prev; // no changes
       return { ...prev, procedures: updated };
     });
   }, [prices]);
@@ -337,14 +337,14 @@ export function VisitBuilder({
   const updateProcedure = useCallback((clientId: string, updates: Partial<ProcedureEntry>) => {
     setVisitData((prev) => ({
       ...prev,
-      procedures: prev.procedures.map((p) =>
+      procedures: prev.procedures.map((p: ProcedureEntry) =>
         p.clientId === clientId ? { ...p, ...updates } : p
       ),
     }));
   }, []);
 
   const removeProcedure = useCallback((clientId: string) => {
-    const proc = visitData.procedures.find((p) => p.clientId === clientId);
+    const proc = visitData.procedures.find((p: ProcedureEntry) => p.clientId === clientId);
     if (!proc) return;
 
     // Clear previous undo timer
@@ -352,7 +352,7 @@ export function VisitBuilder({
 
     setVisitData((prev) => ({
       ...prev,
-      procedures: prev.procedures.filter((p) => p.clientId !== clientId),
+      procedures: prev.procedures.filter((p: ProcedureEntry) => p.clientId !== clientId),
     }));
 
     const timer = setTimeout(() => setUndoItem(null), 5000);
@@ -371,7 +371,7 @@ export function VisitBuilder({
 
   // Computed
   const subtotal = useMemo(() => {
-    return round2(visitData.procedures.reduce((sum, p) => sum + parsePrice(p.price), 0));
+    return round2(visitData.procedures.reduce((sum: number, p: ProcedureEntry) => sum + parsePrice(p.price), 0));
   }, [visitData.procedures]);
 
   const discountAmount = round2(subtotal * discountPercent / 100);
@@ -381,7 +381,7 @@ export function VisitBuilder({
   const filteredTypes = useMemo(() => {
     if (!procTypes) return [];
     const q = searchQuery.toLowerCase();
-    return procTypes.filter((t) => {
+    return procTypes.filter((t: ProcedureTypeItem) => {
       const localName = localizeProcedureType(t.name, locale).toLowerCase();
       return t.name.toLowerCase().includes(q) || localName.includes(q);
     });
@@ -392,10 +392,10 @@ export function VisitBuilder({
 
   // Validation
   const allValid = useMemo(() => {
-    return visitData.procedures.every((proc) => {
+    return visitData.procedures.every((proc: ProcedureEntry) => {
       const config = getFieldConfig(proc.tp);
       if (!config.requiredFields?.length) return true;
-      return config.requiredFields.every((f) => {
+      return config.requiredFields.every((f: string) => {
         const val = proc[f as keyof ProcedureEntry];
         return val !== undefined && val !== "";
       });
@@ -413,7 +413,7 @@ export function VisitBuilder({
     const visitId = genId();
     const procs = visitData.procedures;
     setSubmitting(true);
-    setResults(procs.map((p) => ({ clientId: p.clientId, status: "pending" })));
+    setResults(procs.map((p: ProcedureEntry) => ({ clientId: p.clientId, status: "pending" as const })));
 
     const savedIds: number[] = [];
 
@@ -433,15 +433,15 @@ export function VisitBuilder({
         savedIds.push(data.id);
 
         setResults((prev) =>
-          prev.map((r) =>
-            r.clientId === proc.clientId ? { ...r, status: "success", serverId: data.id } : r
+          prev.map((r: SubmissionResult) =>
+            r.clientId === proc.clientId ? { ...r, status: "success" as const, serverId: data.id } : r
           ),
         );
       } catch (err) {
         setResults((prev) =>
-          prev.map((r) =>
+          prev.map((r: SubmissionResult) =>
             r.clientId === proc.clientId
-              ? { ...r, status: "error", error: err instanceof Error ? err.message : "Unknown error" }
+              ? { ...r, status: "error" as const, error: err instanceof Error ? err.message : "Unknown error" }
               : r
           ),
         );
@@ -450,7 +450,7 @@ export function VisitBuilder({
 
     // Check if all succeeded
     setResults((prev) => {
-      const allSuccess = prev.every((r) => r.status === "success");
+      const allSuccess = prev.every((r: SubmissionResult) => r.status === "success");
       if (allSuccess) {
         // Record payment
         recordPayment(savedIds, token, visitId);
@@ -486,7 +486,7 @@ export function VisitBuilder({
         ownerName,
         date: visitData.date,
         clinicName,
-        procedures: visitData.procedures.map((p) => ({
+        procedures: visitData.procedures.map((p: ProcedureEntry) => ({
           name: localizeProcedureType(p.tpname, locale) + (p.vac ? ` — ${p.vac}` : ""),
           price: parsePrice(p.price),
         })),
@@ -507,13 +507,13 @@ export function VisitBuilder({
   const retryFailed = useCallback(async () => {
     const token = getStoredSession()?.accessToken ?? "";
     if (!token) return;
-    const failed = results.filter((r) => r.status === "error");
+    const failed = results.filter((r: SubmissionResult) => r.status === "error");
     if (failed.length === 0) return;
 
     setSubmitting(true);
 
     for (const result of failed) {
-      const proc = visitData.procedures.find((p) => p.clientId === result.clientId);
+      const proc = visitData.procedures.find((p: ProcedureEntry) => p.clientId === result.clientId);
       if (!proc) continue;
 
       const retryVisitId = genId();
@@ -530,13 +530,13 @@ export function VisitBuilder({
         const data = await res.json();
 
         setResults((prev) =>
-          prev.map((r) =>
-            r.clientId === result.clientId ? { ...r, status: "success", serverId: data.id, error: undefined } : r
+          prev.map((r: SubmissionResult) =>
+            r.clientId === result.clientId ? { ...r, status: "success" as const, serverId: data.id, error: undefined } : r
           ),
         );
       } catch (err) {
         setResults((prev) =>
-          prev.map((r) =>
+          prev.map((r: SubmissionResult) =>
             r.clientId === result.clientId
               ? { ...r, error: err instanceof Error ? err.message : "Unknown error" }
               : r
@@ -549,9 +549,9 @@ export function VisitBuilder({
 
     // Check if all good now, proceed to payment
     setResults((prev) => {
-      const allSuccess = prev.every((r) => r.status === "success");
+      const allSuccess = prev.every((r: SubmissionResult) => r.status === "success");
       if (allSuccess) {
-        const ids = prev.map((r) => r.serverId!).filter(Boolean);
+        const ids = prev.map((r: SubmissionResult) => r.serverId!).filter(Boolean);
         recordPayment(ids, token, genId());
       }
       return prev;
@@ -564,8 +564,8 @@ export function VisitBuilder({
     onClose();
   }, [queryClient, petId, onSuccess, onClose]);
 
-  const successCount = results.filter((r) => r.status === "success").length;
-  const errorCount = results.filter((r) => r.status === "error").length;
+  const successCount = results.filter((r: SubmissionResult) => r.status === "success").length;
+  const errorCount = results.filter((r: SubmissionResult) => r.status === "error").length;
   const hasErrors = errorCount > 0;
 
   /* ─── Render ─── */
@@ -692,7 +692,7 @@ export function VisitBuilder({
                       className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary bg-white"
                     >
                       <option value="">— {t("select")} —</option>
-                      {staffList.map((s) => (
+                      {staffList.map((s: { id: number; first_name: string }) => (
                         <option key={s.id} value={String(s.id)}>{s.first_name}</option>
                       ))}
                     </select>
@@ -730,7 +730,7 @@ export function VisitBuilder({
                 {/* Procedure type chips */}
                 {allTypes.length > 0 && (
                   <div className="mt-2 flex flex-wrap gap-1.5">
-                    {allTypes.map((type) => (
+                    {allTypes.map((type: ProcedureTypeItem) => (
                       <button
                         key={type.tp}
                         onClick={() => addProcedure(type)}
@@ -750,7 +750,7 @@ export function VisitBuilder({
                     ) : filteredTypes.length === 0 ? (
                       <div className="px-4 py-3 text-sm text-foreground-muted/50">{t("noResults")}</div>
                     ) : (
-                      filteredTypes.map((type) => (
+                      filteredTypes.map((type: ProcedureTypeItem) => (
                         <button
                           key={type.tp}
                           onClick={() => addProcedure(type)}
@@ -776,7 +776,7 @@ export function VisitBuilder({
                 </div>
               ) : (
                 <div className="space-y-2">
-                  {visitData.procedures.map((proc) => (
+                  {visitData.procedures.map((proc: ProcedureEntry) => (
                     <ProcedureCard
                       key={proc.clientId}
                       proc={proc}
@@ -826,7 +826,7 @@ export function VisitBuilder({
 
               {/* Summary table */}
               <div className="space-y-2">
-                {visitData.procedures.map((proc) => (
+                {visitData.procedures.map((proc: ProcedureEntry) => (
                   <div key={proc.clientId} className="flex items-center justify-between py-1.5">
                     <span className="text-sm text-primary-dark">
                       {localizeProcedureType(proc.tpname, locale)}
@@ -984,7 +984,7 @@ function ProcedureCard({
   const brandOptions = getBrandOptions(config, vaccineOpts);
   const localizedName = localizeProcedureType(proc.tpname, locale);
 
-  const isRequiredMissing = config.requiredFields?.some((f) => {
+  const isRequiredMissing = config.requiredFields?.some((f: string) => {
     const val = proc[f as keyof ProcedureEntry];
     return val === undefined || val === "";
   });
@@ -1043,7 +1043,7 @@ function ProcedureCard({
                 </label>
                 <select value={proc.vac} onChange={(e) => onChange({ vac: e.target.value })} className={`${inputClass} bg-white`}>
                   <option value="">{t("select")}</option>
-                  {options.map((opt) => (
+                  {options.map((opt: { value: string; label: string }) => (
                     <option key={opt.value} value={opt.value}>{opt.label}</option>
                   ))}
                 </select>
@@ -1053,7 +1053,7 @@ function ProcedureCard({
                   <label className={labelClass}>{t("brand")}</label>
                   <select value={proc.vacn} onChange={(e) => onChange({ vacn: e.target.value })} className={`${inputClass} bg-white`}>
                     <option value="">{t("select")}</option>
-                    {brandOptions.map((opt) => (
+                    {brandOptions.map((opt: { value: string; label: string }) => (
                       <option key={opt.value} value={opt.value}>{opt.label}</option>
                     ))}
                   </select>
@@ -1073,7 +1073,7 @@ function ProcedureCard({
                 <label className={labelClass}>{t("dehelDrug")}</label>
                 <select value={proc.deh} onChange={(e) => onChange({ deh: e.target.value })} className={`${inputClass} bg-white`}>
                   <option value="">{t("select")}</option>
-                  {options.map((opt) => (
+                  {options.map((opt: { value: string; label: string }) => (
                     <option key={opt.value} value={opt.value}>{opt.label}</option>
                   ))}
                   <option value="სხვა">{t("other")}</option>
@@ -1104,7 +1104,7 @@ function ProcedureCard({
                       className={`${inputClass} bg-white`}
                     >
                       <option value="">{t("select")}</option>
-                      {catOptions.map((opt) => (
+                      {catOptions.map((opt: { value: string; label: string }) => (
                         <option key={opt.value} value={opt.value}>{opt.label}</option>
                       ))}
                       <option value="სხვა">{t("other")}</option>

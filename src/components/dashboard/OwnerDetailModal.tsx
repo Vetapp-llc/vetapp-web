@@ -105,7 +105,7 @@ export function OwnerDetailModal({ open, personalId, onClose, onViewPet }: Owner
                 </div>
               ) : (
                 <div className="grid gap-2 sm:grid-cols-2">
-                  {owner.pets.map((pet) => (
+                  {owner.pets.map((pet: { id: string; name: string; species: string; breed: string; sex: string }) => (
                     <button
                       key={pet.id}
                       onClick={() => onViewPet(String(pet.id))}

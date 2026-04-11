@@ -280,7 +280,14 @@
     "notFound": "Pet not found",
     "notFoundDesc": "The pet profile you are looking for does not exist.",
     "scanQr": "Scan this QR code to view this pet's medical passport",
-    "poweredBy": "Powered by VetApp"
+    "poweredBy": "Powered by VetApp",
+    "pinLookup": "Look up pet by PIN",
+    "pinPlaceholder": "Enter 4-digit PIN",
+    "pinSearch": "Search",
+    "pinSearching": "Searching...",
+    "pinInvalid": "Please enter a valid 4-digit PIN",
+    "pinNotFound": "No pet found with this PIN code",
+    "pinDescription": "Enter the 4-digit PIN code provided by the pet owner"
   },
   "admin": {
     "title": "Admin Panel",

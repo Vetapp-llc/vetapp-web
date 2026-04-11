@@ -261,6 +261,27 @@
     "procedureRemoved": "Procedure removed",
     "undo": "Undo"
   },
+  "petProfile": {
+    "title": "Pet Medical Passport",
+    "petInfo": "Pet Information",
+    "name": "Name",
+    "species": "Species",
+    "breed": "Breed",
+    "sex": "Sex",
+    "birth": "Date of Birth",
+    "chip": "Microchip",
+    "color": "Color",
+    "castrated": "Neutered",
+    "yes": "Yes",
+    "no": "No",
+    "medicalRecords": "Medical Records",
+    "records": "{count, plural, one {# record} other {# records}}",
+    "noRecords": "No medical records found",
+    "notFound": "Pet not found",
+    "notFoundDesc": "The pet profile you are looking for does not exist.",
+    "scanQr": "Scan this QR code to view this pet's medical passport",
+    "poweredBy": "Powered by VetApp"
+  },
   "admin": {
     "title": "Admin Panel",
     "totalClinics": "Total Clinics",

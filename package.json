@@ -3,9 +3,9 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --turbopack",
+    "dev": "next dev --turbopack --port 3002",
     "build": "next build",
-    "start": "next start",
+    "start": "next start --port 3002",
     "lint": "next lint",
     "generate:types": "npx swagger2openapi http://localhost:8080/swagger/doc.json -o /tmp/vetapp-openapi3.json && npx openapi-typescript /tmp/vetapp-openapi3.json -o src/lib/types/api.generated.ts"
   },

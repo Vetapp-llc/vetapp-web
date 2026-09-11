@@ -213,14 +213,14 @@ export default function LandingPage() {
             />
             <Image
               src="/images/ios-img-2.png"
-              alt="VetApp services"
+              alt="VetApp pet list"
               width={180}
               height={360}
               className="rounded-2xl shadow-lg animate-float-down"
             />
             <Image
               src="/images/ios-img-3.png"
-              alt="VetApp vaccines"
+              alt="VetApp calendar"
               width={180}
               height={360}
               className="hidden sm:block rounded-2xl shadow-lg animate-float-up"

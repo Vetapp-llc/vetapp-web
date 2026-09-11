@@ -206,7 +206,7 @@ export default function LandingPage() {
           <div className="mt-14 flex items-end justify-center gap-5">
             <Image
               src="/images/ios-img-1.png"
-              alt="VetApp home"
+              alt="VetApp welcome screen"
               width={180}
               height={360}
               className="rounded-2xl shadow-lg animate-float-up"

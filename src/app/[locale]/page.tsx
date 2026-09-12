@@ -218,14 +218,6 @@ export default function LandingPage() {
               height={360}
               className="rounded-2xl shadow-lg animate-float-down"
             />
-            <Image
-              src="/images/ios-img-3.png"
-              alt="VetApp calendar"
-              width={180}
-              height={360}
-              className="hidden sm:block rounded-2xl shadow-lg animate-float-up"
-              style={{ animationDelay: "0.5s" }}
-            />
           </div>
         </div>
       </section>

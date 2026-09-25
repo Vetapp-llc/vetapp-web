@@ -2,7 +2,9 @@
 
 import { createContext, useContext, useState } from "react";
 
-export type ViewId = "home" | "stats" | "pets" | "owners" | "wideSearch";
+export type ViewId =
+  | "home" | "stats" | "pets" | "owners" | "wideSearch"
+  | "shop" | "prices" | "staff" | "appointments" | "promo" | "account";
 
 interface DashboardViewContextValue {
   view: ViewId;

@@ -2,41 +2,12 @@
 
 import { useState, useEffect } from "react";
 import { useTranslations, useLocale } from "next-intl";
+import { useQueryClient } from "@tanstack/react-query";
 import { usePetDetail } from "@/lib/hooks/useClinicData";
-import { localizeProcedureType, localizeSpeciesValue, localizeSex } from "@/lib/utils/localize";
+import { PetRecords } from "./pet/PetRecords";
+import { AllergiesPanel, CertificateModal, EditPetModal, PetAppointments } from "./pet/PetExtras";
+import { localizeSpeciesValue, localizeSex, speciesKey as speciesKeyOf } from "@/lib/utils/localize";
 import { VisitBuilder } from "./VisitBuilder";
-import type { MedicalRecord } from "@/lib/types/api";
-
-const PROCEDURE_COLORS: Record<string, string> = {
-  ვაქცინაცია: "bg-emerald-50 text-emerald-700 border-emerald-200",
-  Vaccination: "bg-emerald-50 text-emerald-700 border-emerald-200",
-  დეჰელმინთიზაცია: "bg-amber-50 text-amber-700 border-amber-200",
-  Deworming: "bg-amber-50 text-amber-700 border-amber-200",
-  ექტოპარაზიტები: "bg-orange-50 text-orange-700 border-orange-200",
-  Ectoparasites: "bg-orange-50 text-orange-700 border-orange-200",
-  კონსულტაცია: "bg-blue-50 text-blue-700 border-blue-200",
-  Consultation: "bg-blue-50 text-blue-700 border-blue-200",
-  ოპერაცია: "bg-red-50 text-red-700 border-red-200",
-  Surgery: "bg-red-50 text-red-700 border-red-200",
-  ლაბორატორია: "bg-purple-50 text-purple-700 border-purple-200",
-  Laboratory: "bg-purple-50 text-purple-700 border-purple-200",
-  ტესტი: "bg-indigo-50 text-indigo-700 border-indigo-200",
-  Test: "bg-indigo-50 text-indigo-700 border-indigo-200",
-};
-
-function renderTextWithBreaks(text: string) {
-  const parts = text.split(/<br\s*\/?>/gi);
-  return parts.map((part, i) => (
-    <span key={i}>
-      {part}
-      {i < parts.length - 1 && <br />}
-    </span>
-  ));
-}
-
-function getBadgeColor(type: string): string {
-  return PROCEDURE_COLORS[type] ?? "bg-gray-50 text-gray-700 border-gray-200";
-}
 
 function formatDate(d: string | null | undefined): string {
   if (!d) return "—";
@@ -78,104 +49,30 @@ function LoadingSkeleton() {
   );
 }
 
-/* ─── Record Card ─── */
-function RecordCard({ record, locale, t }: { record: MedicalRecord; locale: string; t: ReturnType<typeof useTranslations<"clinic">> }) {
-  const [expanded, setExpanded] = useState(false);
-  const localizedType = localizeProcedureType(record.procedureType, locale);
-  const badgeColor = getBadgeColor(record.procedureType) || getBadgeColor(localizedType);
-
-  return (
-    <div className="rounded-xl border border-gray-100 bg-white transition-all hover:shadow-[0_2px_12px_rgba(0,0,0,0.04)]">
-      <button
-        onClick={() => setExpanded(!expanded)}
-        className="flex w-full items-center gap-3 px-4 py-3 text-left cursor-pointer"
-      >
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className={`inline-flex rounded-lg border px-2 py-0.5 text-xs font-semibold ${badgeColor}`}>
-              {localizedType}
-            </span>
-            {record.procedureName && (
-              <span className="text-xs text-foreground-muted/60 truncate">{record.procedureName}</span>
-            )}
-          </div>
-          <p className="mt-1 text-xs text-foreground-muted/50">
-            {formatDate(record.date ?? null)}
-            {record.vetName ? ` · ${record.vetName}` : ""}
-            {record.price ? ` · ${record.price} ₾` : ""}
-          </p>
-        </div>
-        <svg className={`h-4 w-4 text-foreground-muted/40 transition-transform ${expanded ? "rotate-180" : ""}`} viewBox="0 0 20 20" fill="currentColor">
-          <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
-        </svg>
-      </button>
-
-      {expanded && (
-        <div className="border-t border-gray-50 px-4 py-3 space-y-2 text-sm">
-          {record.diagnosis && (
-            <div>
-              <span className="text-xs font-semibold uppercase text-foreground-muted/50">{t("diagnosis")}</span>
-              <p className="text-primary-dark">{renderTextWithBreaks(record.diagnosis)}</p>
-            </div>
-          )}
-          {record.anamnesis && (
-            <div>
-              <span className="text-xs font-semibold uppercase text-foreground-muted/50">{t("anamnesis")}</span>
-              <p className="text-primary-dark">{renderTextWithBreaks(record.anamnesis)}</p>
-            </div>
-          )}
-          {record.notes && (
-            <div>
-              <span className="text-xs font-semibold uppercase text-foreground-muted/50">{t("notes")}</span>
-              <p className="text-primary-dark">{renderTextWithBreaks(record.notes)}</p>
-            </div>
-          )}
-          {record.comment && (
-            <div>
-              <span className="text-xs font-semibold uppercase text-foreground-muted/50">{t("comment")}</span>
-              <p className="text-primary-dark">{renderTextWithBreaks(record.comment)}</p>
-            </div>
-          )}
-          {record.vaccinations.length > 0 && (
-            <div>
-              <span className="text-xs font-semibold uppercase text-foreground-muted/50">{t("vaccinesGiven")}</span>
-              <div className="mt-1 flex flex-wrap gap-1.5">
-                {record.vaccinations.map((v: string, i: number) => (
-                  <span key={i} className="rounded-lg bg-emerald-50 border border-emerald-200 px-2 py-0.5 text-xs text-emerald-700">{v}</span>
-                ))}
-              </div>
-            </div>
-          )}
-          {record.tests.length > 0 && (
-            <div>
-              <span className="text-xs font-semibold uppercase text-foreground-muted/50">{t("tests")}</span>
-              <div className="mt-1 flex flex-wrap gap-1.5">
-                {record.tests.map((v: string, i: number) => (
-                  <span key={i} className="rounded-lg bg-indigo-50 border border-indigo-200 px-2 py-0.5 text-xs text-indigo-700">{v}</span>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-    </div>
-  );
-}
-
 /* ─── Main Modal ─── */
 interface PetDetailModalProps {
   open: boolean;
   petId: string | null;
+  /** Owner personal ID the pet was found by — lets a clinic open a pet registered elsewhere. */
+  ownerProof?: string;
   onClose: () => void;
   onViewOwner: (personalId: string) => void;
 }
 
-export function PetDetailModal({ open, petId, onClose, onViewOwner }: PetDetailModalProps) {
+export function PetDetailModal({ open, petId, ownerProof, onClose, onViewOwner }: PetDetailModalProps) {
   const t = useTranslations("clinic");
   const locale = useLocale();
-  const { data: pet, isLoading } = usePetDetail(open ? petId : null);
-  const [filterType, setFilterType] = useState<string>("all");
+  const tf = useTranslations("features");
+  const queryClient = useQueryClient();
+  const { data: pet, isLoading } = usePetDetail(open ? petId : null, ownerProof);
+  const [tab, setTab] = useState<"records" | "allergies" | "appointments">("records");
   const [visitBuilderOpen, setVisitBuilderOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
+  const [certOpen, setCertOpen] = useState(false);
+
+  useEffect(() => {
+    if (open) setTab("records");
+  }, [open, petId]);
 
   useEffect(() => {
     if (open) document.body.style.overflow = "hidden";
@@ -184,18 +81,6 @@ export function PetDetailModal({ open, petId, onClose, onViewOwner }: PetDetailM
   }, [open]);
 
   if (!open) return null;
-
-  // Get unique procedure types for filter tabs
-  const records: MedicalRecord[] = pet?.medicalRecords || [];
-  const procedureTypes: string[] = pet
-    ? [...new Set(records.map((r: MedicalRecord) => r.procedureType).filter(Boolean))]
-    : [];
-
-  const filteredRecords: MedicalRecord[] = pet
-    ? filterType === "all"
-      ? records
-      : records.filter((r: MedicalRecord) => r.procedureType === filterType)
-    : [];
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -237,6 +122,18 @@ export function PetDetailModal({ open, petId, onClose, onViewOwner }: PetDetailM
                   <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
                 </svg>
                 {t("newVisit")}
+              </button>
+              <button
+                onClick={() => setEditOpen(true)}
+                className="mt-3 ml-2 inline-flex items-center rounded-xl border border-gray-200 bg-white px-4 py-2 text-xs font-bold text-primary-dark hover:bg-gray-50 transition-colors cursor-pointer"
+              >
+                {tf("editPet")}
+              </button>
+              <button
+                onClick={() => setCertOpen(true)}
+                className="mt-3 ml-2 inline-flex items-center rounded-xl border border-gray-200 bg-white px-4 py-2 text-xs font-bold text-primary-dark hover:bg-gray-50 transition-colors cursor-pointer"
+              >
+                {tf("certificate")}
               </button>
 
               {/* Pet info grid */}
@@ -293,56 +190,30 @@ export function PetDetailModal({ open, petId, onClose, onViewOwner }: PetDetailM
               </div>
             )}
 
-            {/* Medical History */}
+            {/* Records / allergies / appointments */}
             <div className="px-6 pb-6">
-              <h3 className="mb-3 text-sm font-bold text-primary-dark">
-                {t("medicalHistory")}
-                <span className="ml-1.5 text-foreground-muted/40 font-normal">({records.length})</span>
-              </h3>
-
-              {/* Filter tabs */}
-              {procedureTypes.length > 1 && (
-                <div className="mb-3 flex flex-wrap gap-1.5">
+              <div className="mb-3 flex flex-wrap gap-1.5" role="tablist">
+                {([
+                  ["records", tf("records")],
+                  ["allergies", tf("allergies")],
+                  ["appointments", tf("appointments")],
+                ] as const).map(([id, label]) => (
                   <button
-                    onClick={() => setFilterType("all")}
-                    className={`rounded-lg px-2.5 py-1 text-xs font-medium transition-all cursor-pointer ${
-                      filterType === "all"
-                        ? "bg-primary text-white"
-                        : "bg-gray-100 text-foreground-muted hover:bg-gray-200"
+                    key={id}
+                    role="tab"
+                    aria-selected={tab === id}
+                    onClick={() => setTab(id)}
+                    className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-all cursor-pointer ${
+                      tab === id ? "bg-primary text-white" : "bg-gray-100 text-foreground-muted hover:bg-gray-200"
                     }`}
                   >
-                    {t("all")} ({records.length})
+                    {label}
                   </button>
-                  {procedureTypes.map((type: string) => {
-                    const count = records.filter((r: MedicalRecord) => r.procedureType === type).length;
-                    return (
-                      <button
-                        key={type}
-                        onClick={() => setFilterType(type)}
-                        className={`rounded-lg px-2.5 py-1 text-xs font-medium transition-all cursor-pointer ${
-                          filterType === type
-                            ? "bg-primary text-white"
-                            : "bg-gray-100 text-foreground-muted hover:bg-gray-200"
-                        }`}
-                      >
-                        {localizeProcedureType(type, locale)} ({count})
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
-
-              {filteredRecords.length === 0 ? (
-                <div className="rounded-xl border-2 border-dashed border-gray-200 py-8 text-center">
-                  <p className="text-sm text-foreground-muted/50">{t("noRecords")}</p>
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  {filteredRecords.map((record: MedicalRecord) => (
-                    <RecordCard key={record.id} record={record} locale={locale} t={t} />
-                  ))}
-                </div>
-              )}
+                ))}
+              </div>
+              {tab === "records" && <PetRecords petId={String(pet.id ?? petId)} species={speciesKeyOf(pet.species)} />}
+              {tab === "allergies" && <AllergiesPanel petId={String(pet.id ?? petId)} ownerId={pet.ownerPersonalId} />}
+              {tab === "appointments" && <PetAppointments petId={String(pet.id ?? petId)} petName={pet.name} ownerId={pet.ownerPersonalId} />}
             </div>
           </div>
         )}
@@ -352,6 +223,7 @@ export function PetDetailModal({ open, petId, onClose, onViewOwner }: PetDetailM
           <VisitBuilder
             petId={pet.id?.toString() ?? petId ?? ""}
             petName={pet.name ?? ""}
+            species={pet.species ?? ""}
             ownerPersonalId={pet.ownerPersonalId ?? ""}
             ownerName={pet.ownerName ?? ""}
             ownerPhone={pet.ownerPhone ?? ""}
@@ -359,6 +231,24 @@ export function PetDetailModal({ open, petId, onClose, onViewOwner }: PetDetailM
             onSuccess={() => setVisitBuilderOpen(false)}
           />
         )}
+
+        {editOpen && pet && (
+          <EditPetModal
+            pet={{
+              id: String(pet.id ?? petId), name: pet.name, species: pet.species, breed: pet.breed, sex: pet.sex,
+              color: pet.color, birth: pet.birth, chip: pet.chip, chipDate: pet.chipDate, cast: pet.cast,
+              castDate: pet.castDate, ownerPersonalId: pet.ownerPersonalId, ownerName: pet.ownerName,
+              ownerPhone: pet.ownerPhone, ownerEmail: pet.ownerEmail,
+            }}
+            onClose={() => setEditOpen(false)}
+            onSaved={() => {
+              setEditOpen(false);
+              queryClient.invalidateQueries({ queryKey: ["clinic-pet", petId] });
+              queryClient.invalidateQueries({ queryKey: ["clinic-pets"] });
+            }}
+          />
+        )}
+        {certOpen && pet && <CertificateModal petId={String(pet.id ?? petId)} ownerId={pet.ownerPersonalId} onClose={() => setCertOpen(false)} />}
       </div>
     </div>
   );

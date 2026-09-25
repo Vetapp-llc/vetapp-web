@@ -14,6 +14,8 @@ import { OwnerDetailModal } from "@/components/dashboard/OwnerDetailModal";
 import { useDashboardView } from "@/lib/context/DashboardViewContext";
 import type { ViewId } from "@/lib/context/DashboardViewContext";
 import breedsData from "@/lib/data/breeds.json";
+import { ShopView, PricesView, StaffView, AppointmentsView, PromoView, AccountView } from "@/components/dashboard/views/ClinicViews";
+import { apiRequest } from "@/lib/api/request";
 
 /* ═══════════════════════════════════════════════════════
    ─── TAB: PETS (real data) ───
@@ -604,21 +606,10 @@ function AddOwnerPetModal({ open, onClose, onCreated, prefillId }: { open: boole
         chip: chip.trim() || undefined,
         color: color.trim() || undefined,
         date: birthDate || undefined,
+        petStatus: petStatus || undefined,
       };
-      if (petStatus) body.status = Number(petStatus);
 
-      const res = await fetch(`/api/clinic/pets?token=${encodeURIComponent(token)}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      });
-
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({ message: "Error" }));
-        throw new Error(err.message || "Failed to create pet");
-      }
-
-      const data = await res.json();
+      const data = await apiRequest<{ id: string }>("POST", "/pets", body);
       setCreatedPetId(String(data.id));
       setToast({ type: "success", message: t("petCreated") });
     } catch (err) {
@@ -788,8 +779,8 @@ function AddOwnerPetModal({ open, onClose, onCreated, prefillId }: { open: boole
                 <label className={reqLabel}>{t("petStatus")} {reqStar}</label>
                 <select value={petStatus} onChange={(e) => { setPetStatus(e.target.value); markTouched("petStatus"); }} onBlur={() => markTouched("petStatus")} className={sc("petStatus")}>
                   <option value="">{t("selectStatus")}</option>
-                  <option value="1">{t("statusDomestic")}</option>
-                  <option value="2">{t("statusStray")}</option>
+                  <option value="INHABITANT">{t("statusDomestic")}</option>
+                  <option value="STREET">{t("statusStray")}</option>
                 </select>
                 {fieldErr("petStatus")}
               </div>
@@ -841,6 +832,7 @@ export default function DashboardPage() {
 
   // Pet detail modal
   const [petModalId, setPetModalId] = useState<string | null>(null);
+  const [petOwnerProof, setPetOwnerProof] = useState<string | undefined>();
   const [petModalOpen, setPetModalOpen] = useState(false);
 
   // Owner detail modal
@@ -852,7 +844,8 @@ export default function DashboardPage() {
     setIsAdmin(getClinicInfo()?.groupId === "4");
   }, []);
 
-  const openPetModal = (id: string) => {
+  const openPetModal = (id: string, ownerProof?: string) => {
+    setPetOwnerProof(ownerProof);
     setOwnerModalOpen(false);
     setPetModalId(id);
     setPetModalOpen(true);
@@ -895,6 +888,7 @@ export default function DashboardPage() {
         <PetDetailModal
           open={petModalOpen}
           petId={petModalId}
+          ownerProof={petOwnerProof}
           onClose={() => setPetModalOpen(false)}
           onViewOwner={openOwnerModal}
         />
@@ -913,12 +907,19 @@ export default function DashboardPage() {
       {view === "pets" && <PetsTab onViewPet={openPetModal} />}
       {view === "owners" && <OwnersTab onViewOwner={openOwnerModal} />}
       {view === "wideSearch" && <WideSearchTab onViewOwner={openOwnerModal} />}
+      {view === "shop" && <ShopView />}
+      {view === "prices" && <PricesView />}
+      {view === "staff" && <StaffView />}
+      {view === "appointments" && <AppointmentsView />}
+      {view === "promo" && <PromoView />}
+      {view === "account" && <AccountView />}
 
       {/* Modals */}
       <AddOwnerPetModal open={addModalOpen} onClose={() => setAddModalOpen(false)} onCreated={openPetModal} prefillId={addPrefillId} />
       <PetDetailModal
         open={petModalOpen}
         petId={petModalId}
+        ownerProof={petOwnerProof}
         onClose={() => setPetModalOpen(false)}
         onViewOwner={openOwnerModal}
       />

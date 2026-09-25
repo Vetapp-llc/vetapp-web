@@ -4,18 +4,17 @@ import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useTranslations, useLocale } from "next-intl";
 import { useQueryClient } from "@tanstack/react-query";
 import {
-  useProcedureTypes,
-  useVaccineOptions,
-  useTestOptions,
-  useDehelOptions,
-  useEctoOptions,
+  useProcedureForms,
   useClinicPrices,
   useClinicStaff,
+  type FormField,
+  type ProcedureForm,
 } from "@/lib/hooks/useProcedureData";
 import { getStoredSession } from "@/lib/utils/session";
-import { localizeProcedureType } from "@/lib/utils/localize";
-import { getFieldConfig, getDropdownOptions, getBrandOptions, TEST_PANELS, ECTO_CATEGORIES } from "@/lib/config/procedureFields";
-import type { ProcedureTypeItem, SelectOption, CreateProcedureRequest, PriceResponse } from "@/lib/types/api";
+import { apiRequest, todayGeorgia } from "@/lib/api/request";
+import { localizeProcedureType, speciesKey } from "@/lib/utils/localize";
+import type { PriceResponse } from "@/lib/types/api";
+import { ProcedureFieldInputs, missingFields as missingFor, withDependents } from "./ProcedureFieldInputs";
 
 /* ─── Types ─── */
 
@@ -23,20 +22,17 @@ interface ProcedureEntry {
   clientId: string;
   tp: number;
   tpname: string;
-  vac: string;
-  vacn: string;
-  ser: string;
-  deh: string;
   price: string;
-  date2: string;
-  nout: string;
-  dani: string;
-  coment: string;
-  vac1: string; vac2: string; vac3: string; vac4: string; vac5: string;
-  vac6: string; vac7: string; vac8: string; vac9: string;
+  /** Form values keyed by vaccination column (see backend procedure_forms.go). */
+  values: Record<string, string>;
+  /** Set once the procedure is saved, so a retry never saves it twice. */
+  serverId?: number;
+  error?: string;
 }
 
 interface VisitData {
+  /** Stable per visit; the payment's idempotency key, kept in the draft. */
+  visitKey: string;
   petId: string;
   petName: string;
   ownerPersonalId: string;
@@ -51,13 +47,6 @@ interface VisitData {
 }
 
 type Step = "build" | "pay" | "receipt";
-
-interface SubmissionResult {
-  clientId: string;
-  status: "pending" | "success" | "error";
-  serverId?: number;
-  error?: string;
-}
 
 interface ReceiptData {
   petName: string;
@@ -78,41 +67,21 @@ function genId(): string {
   return crypto.randomUUID();
 }
 
-function todayStr(): string {
-  return new Date().toISOString().slice(0, 10);
-}
-
 function matchPrice(typeName: string, priceList: PriceResponse[]): string {
   const lower = typeName.toLowerCase();
-  // Extract Georgian part (before parentheses) and English part (inside parentheses)
   const parenMatch = typeName.match(/^(.+?)\s*\((.+?)\)\s*$/);
   const geoName = parenMatch ? parenMatch[1].trim().toLowerCase() : lower;
   const engName = parenMatch ? parenMatch[2].trim().toLowerCase() : "";
-
   for (const p of priceList) {
     const pLower = p.name.toLowerCase();
-    // Exact match
-    if (pLower === lower) return p.price;
-    // Match Georgian or English part
-    if (pLower === geoName) return p.price;
-    if (engName && pLower === engName) return p.price;
-    // Substring match (either contains the other)
-    if (pLower.includes(geoName) || geoName.includes(pLower)) return p.price;
-    if (engName && (pLower.includes(engName) || engName.includes(pLower))) return p.price;
+    // Only whole-number prices can prefill: the list also holds ranges ("15/125").
+    if (!/^\d+(\.\d{1,2})?$/.test(p.price.trim())) continue;
+    if (pLower === lower || pLower === geoName) return p.price.trim();
+    if (engName && pLower === engName) return p.price.trim();
+    if (pLower.includes(geoName) || geoName.includes(pLower)) return p.price.trim();
+    if (engName && (pLower.includes(engName) || engName.includes(pLower))) return p.price.trim();
   }
   return "";
-}
-
-function makeProcedure(type: ProcedureTypeItem, priceList: PriceResponse[]): ProcedureEntry {
-  return {
-    clientId: genId(),
-    tp: type.tp,
-    tpname: type.name,
-    vac: "", vacn: "", ser: "", deh: "", price: matchPrice(type.name, priceList),
-    date2: "", nout: "", dani: "", coment: "",
-    vac1: "", vac2: "", vac3: "", vac4: "", vac5: "",
-    vac6: "", vac7: "", vac8: "", vac9: "",
-  };
 }
 
 function parsePrice(v: string): number {
@@ -124,87 +93,78 @@ function round2(v: number): number {
   return Math.round(v * 100) / 100;
 }
 
-function buildProcBody(
-  proc: ProcedureEntry,
-  visitData: VisitData,
-  petId: string,
-  ownerPersonalId: string,
-  ownerName: string,
-  petName: string,
-  visitId: string,
-): Record<string, unknown> {
-  return {
-    uuid: petId,
+/** Amount as the backend accepts it: a number with at most two decimals. */
+function money(v: number): string {
+  return Number.isInteger(v) ? String(v) : v.toFixed(2);
+}
+
+const PRICE_RE = /^\d{1,9}(\.\d{1,2})?$/;
+
+/** Fields the vet must still fill before the visit can be paid. */
+function missingFields(proc: ProcedureEntry, form: ProcedureForm | undefined): FormField[] {
+  return missingFor(proc.values, form);
+}
+
+function buildProcBody(proc: ProcedureEntry, visit: VisitData): Record<string, unknown> {
+  const body: Record<string, unknown> = {
+    uuid: visit.petId,
+    // Proof of the owner lookup: lets a clinic treat a pet registered elsewhere.
+    owner: visit.ownerPersonalId || undefined,
     tp: proc.tp,
     tpname: proc.tpname,
-    date: visitData.date,
-    anam: visitData.anam,
-    diagn: visitData.diagn,
-    koment: `[visit:${visitId}] ${visitData.koment}`,
-    owner: ownerPersonalId,
-    ownern: ownerName,
-    phone: "0",
-    vetname: visitData.vetId || undefined,
-    pname: petName,
-    price: proc.price || "0",
-    vac: proc.vac || undefined,
-    vacn: proc.vacn || undefined,
-    ser: proc.ser || undefined,
-    deh: proc.deh || undefined,
-    date2: proc.date2 || undefined,
-    nout: proc.nout || undefined,
-    dani: proc.dani || undefined,
-    coment: proc.coment || undefined,
-    vac1: proc.vac1 || undefined,
-    vac2: proc.vac2 || undefined,
-    vac3: proc.vac3 || undefined,
-    vac4: proc.vac4 || undefined,
-    vac5: proc.vac5 || undefined,
-    vac6: proc.vac6 || undefined,
-    vac7: proc.vac7 || undefined,
-    vac8: proc.vac8 || undefined,
-    vac9: proc.vac9 || undefined,
+    date: visit.date,
+    price: proc.price.trim() || "0",
+    vetname: visit.vetId || undefined,
   };
+  for (const [col, val] of Object.entries(proc.values)) {
+    if (col !== "price" && val.trim()) body[col] = val.trim();
+  }
+  // Visit-level notes apply to every procedure unless its own form set them.
+  if (!body.anam && visit.anam.trim()) body.anam = visit.anam.trim();
+  if (!body.diagn && visit.diagn.trim()) body.diagn = visit.diagn.trim();
+  if (!body.koment && visit.koment.trim()) body.koment = visit.koment.trim();
+  return body;
 }
 
+// v2: procedure entries changed shape; v1 drafts are not restorable.
+// The draft is kept through payment too, with each saved procedure's id,
+// so a reload after a partial save never saves (or bills) an item twice.
 const DRAFT_TTL = 24 * 60 * 60 * 1000;
-
-function getDraftKey(petId: string) {
-  return `visit-draft-${petId}`;
-}
+const draftKey = (petId: string) => `vetapp-visit-draft-v2-${petId}`;
 
 function saveDraft(data: VisitData) {
   try {
-    localStorage.setItem(getDraftKey(data.petId), JSON.stringify({ data, ts: Date.now() }));
-  } catch { /* quota */ }
+    localStorage.setItem(draftKey(data.petId), JSON.stringify({ ...data, savedAt: Date.now() }));
+  } catch { /* storage full or disabled */ }
 }
 
 function loadDraft(petId: string): VisitData | null {
   try {
-    const raw = localStorage.getItem(getDraftKey(petId));
+    const raw = localStorage.getItem(draftKey(petId));
     if (!raw) return null;
     const parsed = JSON.parse(raw);
-    if (Date.now() - parsed.ts > DRAFT_TTL) {
-      localStorage.removeItem(getDraftKey(petId));
+    if (Date.now() - parsed.savedAt > DRAFT_TTL) {
+      localStorage.removeItem(draftKey(petId));
       return null;
     }
-    return parsed.data;
+    return parsed as VisitData;
   } catch {
     return null;
   }
 }
 
 function clearDraft(petId: string) {
-  localStorage.removeItem(getDraftKey(petId));
+  try {
+    localStorage.removeItem(draftKey(petId));
+  } catch { /* ignore */ }
 }
 
-/* ─── Quick-add chips ─── */
-
-/* ─── Props ─── */
+/* ─── Main component ─── */
 
 interface VisitBuilderProps {
   petId: string;
   petName: string;
+  species: string;
   ownerPersonalId: string;
   ownerName: string;
   ownerPhone: string;
@@ -212,95 +172,87 @@ interface VisitBuilderProps {
   onSuccess: () => void;
 }
 
-/* ─── Component ─── */
-
 export function VisitBuilder({
-  petId, petName, ownerPersonalId, ownerName, ownerPhone, onClose, onSuccess,
+  petId, petName, species, ownerPersonalId, ownerName, ownerPhone, onClose, onSuccess,
 }: VisitBuilderProps) {
   const t = useTranslations("visit");
   const locale = useLocale();
   const queryClient = useQueryClient();
 
-  // Data queries
-  const { data: procTypes, isLoading: typesLoading } = useProcedureTypes();
-  const { data: vaccineOpts } = useVaccineOptions();
-  const { data: testOpts } = useTestOptions();
-  const { data: dehelOpts } = useDehelOptions();
-  const { data: ectoOpts } = useEctoOptions();
+  const { data: forms, isLoading: formsLoading } = useProcedureForms(speciesKey(species));
   const { data: prices, isLoading: pricesLoading } = useClinicPrices();
   const { data: staffList } = useClinicStaff();
 
-  // Visit data
+  const formByTp = useMemo(() => {
+    const m = new Map<number, ProcedureForm>();
+    for (const f of forms ?? []) m.set(f.tp, f);
+    return m;
+  }, [forms]);
+
   const [visitData, setVisitData] = useState<VisitData>({
+    visitKey: genId(),
     petId, petName, ownerPersonalId, ownerName, ownerPhone,
-    date: todayStr(), anam: "", diagn: "", koment: "", vetId: "",
+    date: todayGeorgia(), anam: "", diagn: "", koment: "", vetId: "",
     procedures: [],
   });
 
-  // UI state
   const [step, setStep] = useState<Step>("build");
   const [expandedCardId, setExpandedCardId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
-  const searchRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Submission state
   const [submitting, setSubmitting] = useState(false);
-  const [results, setResults] = useState<SubmissionResult[]>([]);
+  const [paymentError, setPaymentError] = useState<string | null>(null);
   const [discountPercent, setDiscountPercent] = useState(0);
   const [paymentMethod, setPaymentMethod] = useState<"cash" | "card">("cash");
   const [receiptData, setReceiptData] = useState<ReceiptData | null>(null);
-
-  // Undo state for soft-delete
   const [undoItem, setUndoItem] = useState<{ proc: ProcedureEntry; timer: ReturnType<typeof setTimeout> } | null>(null);
-
-  // Draft banner
   const [draftAvailable, setDraftAvailable] = useState(false);
 
-  // Check for existing draft on mount
+  const anySaved = visitData.procedures.some((p) => p.serverId);
+
   useEffect(() => {
     const draft = loadDraft(petId);
-    if (draft && draft.procedures.length > 0) {
-      setDraftAvailable(true);
-    }
+    if (draft && draft.procedures.length > 0) setDraftAvailable(true);
   }, [petId]);
 
-  // Back-fill prices when price data arrives (handles timing: user adds procedure before prices load)
+  // Back-fill prices once the price list arrives.
   useEffect(() => {
     if (!prices || prices.length === 0) return;
     setVisitData((prev) => {
-      const updated = prev.procedures.map((proc: ProcedureEntry) => {
-        if (proc.price && proc.price !== "0") return proc; // already has a price
+      let changed = false;
+      const procedures = prev.procedures.map((proc) => {
+        if (proc.price || proc.serverId) return proc;
         const matched = matchPrice(proc.tpname, prices);
-        return matched ? { ...proc, price: matched } : proc;
+        if (!matched) return proc;
+        changed = true;
+        return { ...proc, price: matched };
       });
-      if (updated.every((p: ProcedureEntry, i: number) => p === prev.procedures[i])) return prev; // no changes
-      return { ...prev, procedures: updated };
+      return changed ? { ...prev, procedures } : prev;
     });
   }, [prices]);
 
-  // Autosave draft (debounced)
+  // Autosave the draft until the visit is paid (see saveDraft).
   const saveTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
   useEffect(() => {
-    if (step !== "build") return;
+    // Never overwrite a saved draft the vet has not answered yet, and never
+    // save an empty visit — opening the form would otherwise replace a
+    // half-paid draft (and its saved ids) with nothing after a second.
+    if (step === "receipt" || draftAvailable || visitData.procedures.length === 0) return;
     clearTimeout(saveTimerRef.current);
     saveTimerRef.current = setTimeout(() => saveDraft(visitData), 1000);
     return () => clearTimeout(saveTimerRef.current);
-  }, [visitData, step]);
+  }, [visitData, step, draftAvailable]);
 
-  // Lock body scroll
   useEffect(() => {
     document.body.style.overflow = "hidden";
     return () => { document.body.style.overflow = ""; };
   }, []);
 
-  // Close search dropdown on outside click
   useEffect(() => {
     function handleClick(e: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
-        setSearchOpen(false);
-      }
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) setSearchOpen(false);
     }
     document.addEventListener("mousedown", handleClick);
     return () => document.removeEventListener("mousedown", handleClick);
@@ -309,10 +261,10 @@ export function VisitBuilder({
   const restoreDraft = useCallback(() => {
     const draft = loadDraft(petId);
     if (draft) {
-      setVisitData(draft);
-      if (draft.procedures.length > 0) {
-        setExpandedCardId(draft.procedures[0].clientId);
-      }
+      setVisitData({ ...draft, visitKey: draft.visitKey || genId() });
+      if (draft.procedures.length > 0) setExpandedCardId(draft.procedures[0].clientId);
+      // Items already saved can only be paid for now, not edited.
+      if (draft.procedures.some((p) => p.serverId)) setStep("pay");
     }
     setDraftAvailable(false);
   }, [petId]);
@@ -322,39 +274,40 @@ export function VisitBuilder({
     setDraftAvailable(false);
   }, [petId]);
 
-  // Procedure CRUD
-  const addProcedure = useCallback((type: ProcedureTypeItem) => {
-    const proc = makeProcedure(type, prices ?? []);
-    setVisitData((prev) => ({
-      ...prev,
-      procedures: [...prev.procedures, proc],
-    }));
+  const addProcedure = useCallback((form: ProcedureForm) => {
+    const proc: ProcedureEntry = {
+      clientId: genId(), tp: form.tp, tpname: form.name,
+      price: matchPrice(form.name, prices ?? []), values: {},
+    };
+    setVisitData((prev) => ({ ...prev, procedures: [...prev.procedures, proc] }));
     setExpandedCardId(proc.clientId);
     setSearchQuery("");
     setSearchOpen(false);
   }, [prices]);
 
-  const updateProcedure = useCallback((clientId: string, updates: Partial<ProcedureEntry>) => {
+  const updateProcedure = useCallback((clientId: string, patch: Partial<ProcedureEntry>) => {
     setVisitData((prev) => ({
       ...prev,
-      procedures: prev.procedures.map((p: ProcedureEntry) =>
-        p.clientId === clientId ? { ...p, ...updates } : p
-      ),
+      procedures: prev.procedures.map((p) => (p.clientId === clientId ? { ...p, ...patch } : p)),
     }));
   }, []);
 
-  const removeProcedure = useCallback((clientId: string) => {
-    const proc = visitData.procedures.find((p: ProcedureEntry) => p.clientId === clientId);
-    if (!proc) return;
-
-    // Clear previous undo timer
-    if (undoItem) clearTimeout(undoItem.timer);
-
+  const setValue = useCallback((clientId: string, column: string, value: string) => {
     setVisitData((prev) => ({
       ...prev,
-      procedures: prev.procedures.filter((p: ProcedureEntry) => p.clientId !== clientId),
+      procedures: prev.procedures.map((p) =>
+        p.clientId === clientId
+          ? { ...p, values: withDependents(formByTp.get(p.tp), { ...p.values, [column]: value }, column) }
+          : p,
+      ),
     }));
+  }, [formByTp]);
 
+  const removeProcedure = useCallback((clientId: string) => {
+    const proc = visitData.procedures.find((p) => p.clientId === clientId);
+    if (!proc || proc.serverId) return;
+    if (undoItem) clearTimeout(undoItem.timer);
+    setVisitData((prev) => ({ ...prev, procedures: prev.procedures.filter((p) => p.clientId !== clientId) }));
     const timer = setTimeout(() => setUndoItem(null), 5000);
     setUndoItem({ proc, timer });
   }, [visitData.procedures, undoItem]);
@@ -362,201 +315,104 @@ export function VisitBuilder({
   const undoRemove = useCallback(() => {
     if (!undoItem) return;
     clearTimeout(undoItem.timer);
-    setVisitData((prev) => ({
-      ...prev,
-      procedures: [...prev.procedures, undoItem.proc],
-    }));
+    setVisitData((prev) => ({ ...prev, procedures: [...prev.procedures, undoItem.proc] }));
     setUndoItem(null);
   }, [undoItem]);
 
-  // Computed
-  const subtotal = useMemo(() => {
-    return round2(visitData.procedures.reduce((sum: number, p: ProcedureEntry) => sum + parsePrice(p.price), 0));
-  }, [visitData.procedures]);
-
-  const discountAmount = round2(subtotal * discountPercent / 100);
+  const subtotal = useMemo(
+    () => round2(visitData.procedures.reduce((sum, p) => sum + parsePrice(p.price), 0)),
+    [visitData.procedures],
+  );
+  const discountAmount = round2((subtotal * discountPercent) / 100);
   const total = round2(Math.max(0, subtotal - discountAmount));
 
-  // Filtered procedure types for search
-  const filteredTypes = useMemo(() => {
-    if (!procTypes) return [];
+  const availableForms = useMemo(() => {
+    const seen = new Set<number>();
+    return (forms ?? []).filter((f) => (seen.has(f.tp) ? false : (seen.add(f.tp), true)));
+  }, [forms]);
+
+  const filteredForms = useMemo(() => {
     const q = searchQuery.toLowerCase();
-    return procTypes.filter((t: ProcedureTypeItem) => {
-      const localName = localizeProcedureType(t.name, locale).toLowerCase();
-      return t.name.toLowerCase().includes(q) || localName.includes(q);
-    });
-  }, [procTypes, searchQuery, locale]);
+    return availableForms.filter(
+      (f) => f.name.toLowerCase().includes(q) || localizeProcedureType(f.name, locale).toLowerCase().includes(q),
+    );
+  }, [availableForms, searchQuery, locale]);
 
-  // All procedure types for chips
-  const allTypes = procTypes ?? [];
-
-  // Validation
-  const allValid = useMemo(() => {
-    return visitData.procedures.every((proc: ProcedureEntry) => {
-      const config = getFieldConfig(proc.tp);
-      if (!config.requiredFields?.length) return true;
-      return config.requiredFields.every((f: string) => {
-        const val = proc[f as keyof ProcedureEntry];
-        return val !== undefined && val !== "";
-      });
-    });
-  }, [visitData.procedures]);
-
-  const canProceedToPayment = visitData.procedures.length > 0 && allValid;
+  const invalid = useMemo(
+    () => visitData.procedures.some(
+      (p) => missingFields(p, formByTp.get(p.tp)).length > 0 || (p.price.trim() !== "" && !PRICE_RE.test(p.price.trim())),
+    ),
+    [visitData.procedures, formByTp],
+  );
+  const canProceedToPayment = visitData.procedures.length > 0 && !invalid && !!visitData.date;
 
   /* ─── Submission ─── */
 
-  const submitVisit = useCallback(async () => {
-    const token = getStoredSession()?.accessToken ?? "";
-    if (!token) return;
-
-    const visitId = genId();
-    const procs = visitData.procedures;
+  // Saves every procedure not yet saved, then records one payment for all
+  // of them with the method and total currently on screen. Running it
+  // again after a failure only retries what failed, so nothing is saved
+  // or charged twice.
+  const submitVisit = async () => {
+    if (submitting) return;
     setSubmitting(true);
-    setResults(procs.map((p: ProcedureEntry) => ({ clientId: p.clientId, status: "pending" as const })));
+    setPaymentError(null);
 
-    const savedIds: number[] = [];
-
-    for (let i = 0; i < procs.length; i++) {
-      const proc = procs[i];
-      const body = buildProcBody(proc, visitData, petId, ownerPersonalId, ownerName, petName, visitId);
-
+    const ids: number[] = [];
+    let failed = 0;
+    for (const proc of visitData.procedures) {
+      if (proc.serverId) {
+        ids.push(proc.serverId);
+        continue;
+      }
       try {
-        const res = await fetch(`/api/clinic/procedures?token=${encodeURIComponent(token)}`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(body),
+        // The client id is the idempotency key: if a save committed but its
+        // response was lost, the retry gets the same record back.
+        const created = await apiRequest<{ id: number }>("POST", "/procedures", buildProcBody(proc, visitData), {
+          "Idempotency-Key": `proc-${proc.clientId}`,
         });
-
-        if (!res.ok) throw new Error(await res.text());
-        const data = await res.json();
-        savedIds.push(data.id);
-
-        setResults((prev) =>
-          prev.map((r: SubmissionResult) =>
-            r.clientId === proc.clientId ? { ...r, status: "success" as const, serverId: data.id } : r
-          ),
-        );
+        ids.push(created.id);
+        updateProcedure(proc.clientId, { serverId: created.id, error: undefined });
       } catch (err) {
-        setResults((prev) =>
-          prev.map((r: SubmissionResult) =>
-            r.clientId === proc.clientId
-              ? { ...r, status: "error" as const, error: err instanceof Error ? err.message : "Unknown error" }
-              : r
-          ),
-        );
+        failed++;
+        updateProcedure(proc.clientId, { error: err instanceof Error ? err.message : "error" });
       }
     }
 
-    // Check if all succeeded
-    setResults((prev) => {
-      const allSuccess = prev.every((r: SubmissionResult) => r.status === "success");
-      if (allSuccess) {
-        // Record payment
-        recordPayment(savedIds, token, visitId);
-      }
-      setSubmitting(false);
-      return prev;
-    });
-  }, [visitData, petId, ownerPersonalId, ownerName, ownerPhone, petName]);
-
-  const recordPayment = useCallback(async (procedureIds: number[], token: string, visitId: string) => {
-    try {
-      const session = getStoredSession();
-      const clinicName = session?.clinic?.companyName ?? "Clinic";
-
-      const res = await fetch(`/api/clinic/payments?token=${encodeURIComponent(token)}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          uuid: petId,
-          owner: ownerPersonalId,
-          amount: String(total),
+    if (failed === 0) {
+      try {
+        await apiRequest(
+          "POST",
+          "/payments/record",
+          { uuid: petId, date: visitData.date, method: paymentMethod, amount: money(total), procedure_ids: ids },
+          // Same visit, same payment → same key (a lost response is replayed);
+          // a changed method or amount is a different payment, not a replay.
+          { "Idempotency-Key": `pay-${visitData.visitKey}-${paymentMethod}-${money(total)}` },
+        );
+        setReceiptData({
+          petName,
+          ownerName,
           date: visitData.date,
+          clinicName: getStoredSession()?.clinic?.companyName ?? "",
+          procedures: visitData.procedures.map((p) => ({
+            name: localizeProcedureType(p.tpname, locale) + (p.values.vac ? ` — ${p.values.vac}` : ""),
+            price: parsePrice(p.price),
+          })),
+          subtotal,
+          discountPercent,
+          discountAmount,
+          total,
           method: paymentMethod,
-          procedure_ids: procedureIds,
-        }),
-      });
-
-      if (!res.ok) throw new Error(await res.text());
-
-      // Build receipt
-      setReceiptData({
-        petName,
-        ownerName,
-        date: visitData.date,
-        clinicName,
-        procedures: visitData.procedures.map((p: ProcedureEntry) => ({
-          name: localizeProcedureType(p.tpname, locale) + (p.vac ? ` — ${p.vac}` : ""),
-          price: parsePrice(p.price),
-        })),
-        subtotal,
-        discountPercent,
-        discountAmount,
-        total,
-        method: paymentMethod,
-      });
-
-      clearDraft(petId);
-      setStep("receipt");
-    } catch (err) {
-      alert(err instanceof Error ? err.message : "Payment failed");
-    }
-  }, [petId, ownerPersonalId, total, visitData, paymentMethod, petName, ownerName, subtotal, discountPercent, discountAmount, locale]);
-
-  const retryFailed = useCallback(async () => {
-    const token = getStoredSession()?.accessToken ?? "";
-    if (!token) return;
-    const failed = results.filter((r: SubmissionResult) => r.status === "error");
-    if (failed.length === 0) return;
-
-    setSubmitting(true);
-
-    for (const result of failed) {
-      const proc = visitData.procedures.find((p: ProcedureEntry) => p.clientId === result.clientId);
-      if (!proc) continue;
-
-      const retryVisitId = genId();
-      const body = buildProcBody(proc, visitData, petId, ownerPersonalId, ownerName, petName, retryVisitId);
-
-      try {
-        const res = await fetch(`/api/clinic/procedures?token=${encodeURIComponent(token)}`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(body),
         });
-
-        if (!res.ok) throw new Error(await res.text());
-        const data = await res.json();
-
-        setResults((prev) =>
-          prev.map((r: SubmissionResult) =>
-            r.clientId === result.clientId ? { ...r, status: "success" as const, serverId: data.id, error: undefined } : r
-          ),
-        );
+        clearDraft(petId);
+        queryClient.invalidateQueries({ queryKey: ["clinic-pet", petId] });
+        queryClient.invalidateQueries({ queryKey: ["pet-procedures", petId] });
+        setStep("receipt");
       } catch (err) {
-        setResults((prev) =>
-          prev.map((r: SubmissionResult) =>
-            r.clientId === result.clientId
-              ? { ...r, error: err instanceof Error ? err.message : "Unknown error" }
-              : r
-          ),
-        );
+        setPaymentError(err instanceof Error ? err.message : "Payment failed");
       }
     }
-
     setSubmitting(false);
-
-    // Check if all good now, proceed to payment
-    setResults((prev) => {
-      const allSuccess = prev.every((r: SubmissionResult) => r.status === "success");
-      if (allSuccess) {
-        const ids = prev.map((r: SubmissionResult) => r.serverId!).filter(Boolean);
-        recordPayment(ids, token, genId());
-      }
-      return prev;
-    });
-  }, [results, visitData, petId, ownerPersonalId, ownerName, ownerPhone, petName, recordPayment]);
+  };
 
   const handleDone = useCallback(() => {
     queryClient.invalidateQueries({ queryKey: ["clinic-pet", petId] });
@@ -564,15 +420,16 @@ export function VisitBuilder({
     onClose();
   }, [queryClient, petId, onSuccess, onClose]);
 
-  const successCount = results.filter((r: SubmissionResult) => r.status === "success").length;
-  const errorCount = results.filter((r: SubmissionResult) => r.status === "error").length;
-  const hasErrors = errorCount > 0;
+  const savedCount = visitData.procedures.filter((p) => p.serverId).length;
+  const errorCount = visitData.procedures.filter((p) => p.error && !p.serverId).length;
+  const input = "mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary";
+  const label = "text-[10px] font-semibold uppercase tracking-wider text-foreground-muted/50";
 
   /* ─── Render ─── */
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-primary-dark/30 backdrop-blur-sm animate-fade-in" onClick={step === "build" ? onClose : undefined} />
+      <div className="absolute inset-0 bg-primary-dark/30 backdrop-blur-sm animate-fade-in" onClick={step === "build" && !anySaved ? onClose : undefined} />
       <div className="relative z-10 w-full max-w-2xl max-h-[90vh] flex flex-col rounded-2xl bg-white shadow-[0_24px_64px_rgba(0,0,0,0.12)] animate-modal-in overflow-hidden">
 
         {/* Header */}
@@ -584,56 +441,44 @@ export function VisitBuilder({
               <p className="text-xs text-foreground-muted/60">{ownerName}</p>
             </div>
           </div>
-          <button onClick={onClose} className="flex h-8 w-8 items-center justify-center rounded-xl bg-gray-100 text-foreground-muted hover:bg-gray-200 transition-colors cursor-pointer">
+          <button onClick={onClose} aria-label={t("close")} className="flex h-8 w-8 items-center justify-center rounded-xl bg-gray-100 text-foreground-muted hover:bg-gray-200 transition-colors cursor-pointer">
             <svg className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
               <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
             </svg>
           </button>
         </div>
 
-        {/* Scrollable content */}
         <div className="flex-1 overflow-y-auto">
-
-          {/* Draft restore banner */}
           {draftAvailable && step === "build" && (
             <div className="mx-6 mt-4 flex items-center gap-3 rounded-xl bg-amber-50 border border-amber-200 px-4 py-3">
               <span className="text-sm text-amber-800">{t("draftRestore")}</span>
               <div className="ml-auto flex gap-2">
-                <button onClick={restoreDraft} className="rounded-lg bg-amber-600 px-3 py-1 text-xs font-medium text-white hover:bg-amber-700 cursor-pointer">
-                  {t("restore")}
-                </button>
-                <button onClick={discardDraft} className="rounded-lg bg-white border border-amber-300 px-3 py-1 text-xs font-medium text-amber-700 hover:bg-amber-100 cursor-pointer">
-                  {t("discard")}
-                </button>
+                <button onClick={restoreDraft} className="rounded-lg bg-amber-600 px-3 py-1 text-xs font-medium text-white hover:bg-amber-700 cursor-pointer">{t("restore")}</button>
+                <button onClick={discardDraft} className="rounded-lg bg-white border border-amber-300 px-3 py-1 text-xs font-medium text-amber-700 hover:bg-amber-100 cursor-pointer">{t("discard")}</button>
               </div>
             </div>
           )}
 
-          {/* Submission progress banner */}
           {submitting && (
             <div className="mx-6 mt-4 rounded-xl bg-blue-50 border border-blue-200 px-4 py-3">
-              <p className="text-sm text-blue-800">
-                {t("saving")} ({successCount}/{visitData.procedures.length})
-              </p>
+              <p className="text-sm text-blue-800">{t("saving")} ({savedCount}/{visitData.procedures.length})</p>
               <div className="mt-2 h-1.5 rounded-full bg-blue-100 overflow-hidden">
-                <div
-                  className="h-full bg-blue-500 rounded-full transition-all"
-                  style={{ width: `${(successCount / visitData.procedures.length) * 100}%` }}
-                />
+                <div className="h-full bg-blue-500 rounded-full transition-all" style={{ width: `${(savedCount / Math.max(1, visitData.procedures.length)) * 100}%` }} />
               </div>
             </div>
           )}
 
-          {/* Error banner with retry */}
-          {!submitting && hasErrors && step === "pay" && (
+          {!submitting && step === "pay" && (errorCount > 0 || paymentError) && (
             <div className="mx-6 mt-4 rounded-xl bg-red-50 border border-red-200 px-4 py-3">
               <p className="text-sm text-red-800">
-                {t("partialError", { success: successCount, total: results.length })}
+                {errorCount > 0
+                  ? t("partialError", { success: savedCount, total: visitData.procedures.length })
+                  : `${t("paymentFailed")}: ${paymentError}`}
               </p>
-              <button
-                onClick={retryFailed}
-                className="mt-2 rounded-lg bg-red-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-red-700 cursor-pointer"
-              >
+              {visitData.procedures.filter((p) => p.error && !p.serverId).map((p) => (
+                <p key={p.clientId} className="mt-1 text-xs text-red-700">{localizeProcedureType(p.tpname, locale)}: {p.error}</p>
+              ))}
+              <button onClick={submitVisit} className="mt-2 rounded-lg bg-red-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-red-700 cursor-pointer">
                 {t("retry")}
               </button>
             </div>
@@ -642,57 +487,29 @@ export function VisitBuilder({
           {/* Step 1: Build */}
           {step === "build" && (
             <div className="px-6 py-4 space-y-4">
-              {/* Shared fields */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="text-[10px] font-semibold uppercase tracking-wider text-foreground-muted/50">{t("date")}</label>
-                  <input
-                    type="date"
-                    value={visitData.date}
-                    onChange={(e) => setVisitData((p) => ({ ...p, date: e.target.value }))}
-                    className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-                  />
+                  <label className={label}>{t("date")}</label>
+                  <input type="date" value={visitData.date} max={todayGeorgia()} onChange={(e) => setVisitData((p) => ({ ...p, date: e.target.value }))} className={input} />
                 </div>
                 <div>
-                  <label className="text-[10px] font-semibold uppercase tracking-wider text-foreground-muted/50">{t("anamnesis")}</label>
-                  <input
-                    type="text"
-                    value={visitData.anam}
-                    onChange={(e) => setVisitData((p) => ({ ...p, anam: e.target.value }))}
-                    placeholder={t("anamnesisPlaceholder")}
-                    className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-                  />
+                  <label className={label}>{t("anamnesis")}</label>
+                  <input type="text" value={visitData.anam} onChange={(e) => setVisitData((p) => ({ ...p, anam: e.target.value }))} placeholder={t("anamnesisPlaceholder")} className={input} />
                 </div>
                 <div>
-                  <label className="text-[10px] font-semibold uppercase tracking-wider text-foreground-muted/50">{t("diagnosis")}</label>
-                  <input
-                    type="text"
-                    value={visitData.diagn}
-                    onChange={(e) => setVisitData((p) => ({ ...p, diagn: e.target.value }))}
-                    placeholder={t("diagnosisPlaceholder")}
-                    className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-                  />
+                  <label className={label}>{t("diagnosis")}</label>
+                  <input type="text" value={visitData.diagn} onChange={(e) => setVisitData((p) => ({ ...p, diagn: e.target.value }))} placeholder={t("diagnosisPlaceholder")} className={input} />
                 </div>
                 <div>
-                  <label className="text-[10px] font-semibold uppercase tracking-wider text-foreground-muted/50">{t("vetNotes")}</label>
-                  <input
-                    type="text"
-                    value={visitData.koment}
-                    onChange={(e) => setVisitData((p) => ({ ...p, koment: e.target.value }))}
-                    placeholder={t("vetNotesPlaceholder")}
-                    className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-                  />
+                  <label className={label}>{t("vetNotes")}</label>
+                  <input type="text" value={visitData.koment} onChange={(e) => setVisitData((p) => ({ ...p, koment: e.target.value }))} placeholder={t("vetNotesPlaceholder")} className={input} />
                 </div>
                 {staffList && staffList.length > 0 && (
                   <div>
-                    <label className="text-[10px] font-semibold uppercase tracking-wider text-foreground-muted/50">ვეტერინარი</label>
-                    <select
-                      value={visitData.vetId}
-                      onChange={(e) => setVisitData((p) => ({ ...p, vetId: e.target.value }))}
-                      className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary bg-white"
-                    >
-                      <option value="">— {t("select")} —</option>
-                      {staffList.map((s: { id: number; first_name: string }) => (
+                    <label className={label}>{t("vet")}</label>
+                    <select value={visitData.vetId} onChange={(e) => setVisitData((p) => ({ ...p, vetId: e.target.value }))} className={`${input} bg-white`}>
+                      <option value="">{t("vetMe")}</option>
+                      {staffList.map((s) => (
                         <option key={s.id} value={String(s.id)}>{s.first_name}</option>
                       ))}
                     </select>
@@ -702,66 +519,46 @@ export function VisitBuilder({
 
               <div className="border-t border-gray-100 pt-4" />
 
-              {/* Procedure search */}
               <div ref={dropdownRef} className="relative">
-                <div className="flex items-center gap-2">
-                  <div className="relative flex-1">
-                    <svg className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-foreground-muted/40" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
-                    </svg>
-                    <input
-                      ref={searchRef}
-                      type="text"
-                      value={searchQuery}
-                      onChange={(e) => { setSearchQuery(e.target.value); setSearchOpen(true); }}
-                      onFocus={() => setSearchOpen(true)}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter" && filteredTypes.length > 0) {
-                          addProcedure(filteredTypes[0]);
-                        }
-                        if (e.key === "Escape") setSearchOpen(false);
-                      }}
-                      placeholder={t("addProcedure")}
-                      className="w-full rounded-lg border border-gray-200 pl-9 pr-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-                    />
-                  </div>
+                <div className="relative">
+                  <svg className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-foreground-muted/40" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
+                  </svg>
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => { setSearchQuery(e.target.value); setSearchOpen(true); }}
+                    onFocus={() => setSearchOpen(true)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && filteredForms.length > 0) addProcedure(filteredForms[0]);
+                      if (e.key === "Escape") setSearchOpen(false);
+                    }}
+                    placeholder={t("addProcedure")}
+                    className="w-full rounded-lg border border-gray-200 pl-9 pr-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                  />
                 </div>
 
-                {/* Procedure type chips */}
-                {allTypes.length > 0 && (
+                {availableForms.length > 0 && (
                   <div className="mt-2 flex flex-wrap gap-1.5">
-                    {allTypes.map((type: ProcedureTypeItem) => (
-                      <button
-                        key={type.tp}
-                        onClick={() => addProcedure(type)}
-                        className="rounded-lg border border-gray-200 bg-gray-50 px-2.5 py-1 text-xs font-medium text-foreground-muted hover:bg-gray-100 hover:border-gray-300 transition-colors cursor-pointer"
-                      >
-                        {type.name}
+                    {availableForms.map((f) => (
+                      <button key={f.tp} onClick={() => addProcedure(f)} className="rounded-lg border border-gray-200 bg-gray-50 px-2.5 py-1 text-xs font-medium text-foreground-muted hover:bg-gray-100 hover:border-gray-300 transition-colors cursor-pointer">
+                        {localizeProcedureType(f.name, locale)}
                       </button>
                     ))}
                   </div>
                 )}
 
-                {/* Search dropdown */}
                 {searchOpen && (
                   <div className="absolute top-full left-0 right-0 z-20 mt-1 max-h-48 overflow-y-auto rounded-xl border border-gray-200 bg-white shadow-lg">
-                    {typesLoading ? (
+                    {formsLoading ? (
                       <div className="px-4 py-3 text-sm text-foreground-muted/50">{t("loading")}</div>
-                    ) : filteredTypes.length === 0 ? (
+                    ) : filteredForms.length === 0 ? (
                       <div className="px-4 py-3 text-sm text-foreground-muted/50">{t("noResults")}</div>
                     ) : (
-                      filteredTypes.map((type: ProcedureTypeItem) => (
-                        <button
-                          key={type.tp}
-                          onClick={() => addProcedure(type)}
-                          className="flex w-full items-center justify-between px-4 py-2.5 text-left text-sm hover:bg-gray-50 transition-colors cursor-pointer"
-                        >
-                          <span className="font-medium text-primary-dark">
-                            {localizeProcedureType(type.name, locale)}
-                          </span>
-                          <span className="text-xs text-foreground-muted/40">
-                            {type.name !== localizeProcedureType(type.name, locale) ? type.name : ""}
-                          </span>
+                      filteredForms.map((f) => (
+                        <button key={f.tp} onClick={() => addProcedure(f)} className="flex w-full items-center justify-between px-4 py-2.5 text-left text-sm hover:bg-gray-50 transition-colors cursor-pointer">
+                          <span className="font-medium text-primary-dark">{localizeProcedureType(f.name, locale)}</span>
+                          <span className="text-xs text-foreground-muted/40">{f.name !== localizeProcedureType(f.name, locale) ? f.name : ""}</span>
                         </button>
                       ))
                     )}
@@ -769,68 +566,61 @@ export function VisitBuilder({
                 )}
               </div>
 
-              {/* Procedure cards */}
               {visitData.procedures.length === 0 ? (
                 <div className="rounded-xl border-2 border-dashed border-gray-200 py-10 text-center">
                   <p className="text-sm text-foreground-muted/50">{t("noProceduresYet")}</p>
                 </div>
               ) : (
                 <div className="space-y-2">
-                  {visitData.procedures.map((proc: ProcedureEntry) => (
+                  {visitData.procedures.map((proc) => (
                     <ProcedureCard
                       key={proc.clientId}
                       proc={proc}
+                      form={formByTp.get(proc.tp)}
                       expanded={expandedCardId === proc.clientId}
                       onToggle={() => setExpandedCardId(expandedCardId === proc.clientId ? null : proc.clientId)}
-                      onChange={(u) => updateProcedure(proc.clientId, u)}
+                      onPrice={(price) => updateProcedure(proc.clientId, { price })}
+                      onValue={(col, v) => setValue(proc.clientId, col, v)}
                       onRemove={() => removeProcedure(proc.clientId)}
                       locale={locale}
                       t={t}
-                      vaccineOpts={vaccineOpts}
-                      testOpts={testOpts}
-                      dehelOpts={dehelOpts}
-                      ectoOpts={ectoOpts}
                       pricesLoading={pricesLoading}
                     />
                   ))}
                 </div>
               )}
 
-              {/* Undo toast */}
               {undoItem && (
                 <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[70] flex items-center gap-3 rounded-xl bg-gray-900 px-4 py-3 text-white shadow-lg animate-fade-in">
                   <span className="text-sm">{t("procedureRemoved")}</span>
-                  <button onClick={undoRemove} className="rounded-lg bg-white/20 px-3 py-1 text-xs font-medium hover:bg-white/30 cursor-pointer">
-                    {t("undo")}
-                  </button>
+                  <button onClick={undoRemove} className="rounded-lg bg-white/20 px-3 py-1 text-xs font-medium hover:bg-white/30 cursor-pointer">{t("undo")}</button>
                 </div>
               )}
             </div>
           )}
 
-          {/* Step 2: Payment (slides up) */}
+          {/* Step 2: Payment */}
           {step === "pay" && (
             <div className="px-6 py-4 space-y-4 animate-fade-in">
               <div className="flex items-center justify-between">
                 <h3 className="text-sm font-bold text-primary-dark uppercase tracking-wider">{t("payment")}</h3>
-                <button
-                  onClick={() => setStep("build")}
-                  className="flex items-center gap-1 text-xs text-foreground-muted hover:text-primary-dark cursor-pointer"
-                >
-                  <svg className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
-                    <path fillRule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clipRule="evenodd" />
-                  </svg>
-                  {t("back")}
-                </button>
+                {!anySaved && (
+                  <button onClick={() => setStep("build")} className="flex items-center gap-1 text-xs text-foreground-muted hover:text-primary-dark cursor-pointer">
+                    <svg className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clipRule="evenodd" />
+                    </svg>
+                    {t("back")}
+                  </button>
+                )}
               </div>
 
-              {/* Summary table */}
               <div className="space-y-2">
-                {visitData.procedures.map((proc: ProcedureEntry) => (
+                {visitData.procedures.map((proc) => (
                   <div key={proc.clientId} className="flex items-center justify-between py-1.5">
                     <span className="text-sm text-primary-dark">
+                      {proc.serverId ? "✓ " : ""}
                       {localizeProcedureType(proc.tpname, locale)}
-                      {proc.vac ? <span className="text-foreground-muted/50 ml-1">— {proc.vac}</span> : null}
+                      {proc.values.vac ? <span className="text-foreground-muted/50 ml-1">— {proc.values.vac}</span> : null}
                     </span>
                     <span className="text-sm font-semibold text-primary-dark">{parsePrice(proc.price)} ₾</span>
                   </div>
@@ -842,33 +632,19 @@ export function VisitBuilder({
                 <span className="text-sm font-semibold">{subtotal} ₾</span>
               </div>
 
-              {/* Discount */}
               <div>
-                <label className="text-[10px] font-semibold uppercase tracking-wider text-foreground-muted/50">{t("discount")}</label>
+                <label className={label}>{t("discount")}</label>
                 <div className="mt-2 flex flex-wrap gap-1.5">
                   {[0, 10, 15, 20, 50, 100].map((pct) => (
-                    <button
-                      key={pct}
-                      onClick={() => setDiscountPercent(pct)}
-                      className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-all cursor-pointer ${
-                        discountPercent === pct
-                          ? "bg-primary text-white"
-                          : "bg-gray-100 text-foreground-muted hover:bg-gray-200"
-                      }`}
-                    >
+                    <button key={pct} onClick={() => setDiscountPercent(pct)} className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-all cursor-pointer ${discountPercent === pct ? "bg-primary text-white" : "bg-gray-100 text-foreground-muted hover:bg-gray-200"}`}>
                       {pct === 0 ? t("noDiscount") : `${pct}%`}
                     </button>
                   ))}
                   <div className="flex items-center gap-1">
                     <input
-                      type="number"
-                      min="0"
-                      max="100"
+                      type="number" min="0" max="100"
                       value={![0, 10, 15, 20, 50, 100].includes(discountPercent) ? discountPercent : ""}
-                      onChange={(e) => {
-                        const v = Math.max(0, Math.min(100, parseInt(e.target.value) || 0));
-                        setDiscountPercent(v);
-                      }}
+                      onChange={(e) => setDiscountPercent(Math.max(0, Math.min(100, parseInt(e.target.value) || 0)))}
                       placeholder={t("customPercent")}
                       className="w-16 rounded-lg border border-gray-200 px-2 py-1.5 text-xs text-center focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
                     />
@@ -877,7 +653,6 @@ export function VisitBuilder({
                 </div>
               </div>
 
-              {/* Discount display */}
               {discountPercent > 0 && (
                 <div className="rounded-xl bg-green-50 border border-green-200 px-4 py-3">
                   <div className="flex justify-between text-sm">
@@ -892,62 +667,32 @@ export function VisitBuilder({
                 <span className="text-base font-bold text-primary-dark">{total} ₾</span>
               </div>
 
-              {/* Payment method */}
               <div className="flex gap-3">
-                <button
-                  onClick={() => setPaymentMethod("cash")}
-                  className={`flex-1 rounded-xl border-2 px-4 py-3 text-sm font-medium transition-all cursor-pointer ${
-                    paymentMethod === "cash"
-                      ? "border-primary bg-primary/5 text-primary"
-                      : "border-gray-200 text-foreground-muted hover:border-gray-300"
-                  }`}
-                >
-                  {t("cash")}
-                </button>
-                <button
-                  onClick={() => setPaymentMethod("card")}
-                  className={`flex-1 rounded-xl border-2 px-4 py-3 text-sm font-medium transition-all cursor-pointer ${
-                    paymentMethod === "card"
-                      ? "border-primary bg-primary/5 text-primary"
-                      : "border-gray-200 text-foreground-muted hover:border-gray-300"
-                  }`}
-                >
-                  {t("card")}
-                </button>
+                {(["cash", "card"] as const).map((m) => (
+                  <button key={m} onClick={() => setPaymentMethod(m)} className={`flex-1 rounded-xl border-2 px-4 py-3 text-sm font-medium transition-all cursor-pointer ${paymentMethod === m ? "border-primary bg-primary/5 text-primary" : "border-gray-200 text-foreground-muted hover:border-gray-300"}`}>
+                    {t(m)}
+                  </button>
+                ))}
               </div>
 
-              {/* Pay button */}
-              <button
-                onClick={submitVisit}
-                disabled={submitting}
-                className="w-full rounded-xl bg-primary px-6 py-3.5 text-sm font-bold text-white hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
-              >
+              <button onClick={submitVisit} disabled={submitting} className="w-full rounded-xl bg-primary px-6 py-3.5 text-sm font-bold text-white hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer">
                 {submitting ? t("processing") : `${t("pay")} ${total} ₾`}
               </button>
             </div>
           )}
 
-          {/* Receipt */}
-          {step === "receipt" && receiptData && (
-            <Receipt data={receiptData} t={t} locale={locale} onDone={handleDone} />
-          )}
+          {step === "receipt" && receiptData && <Receipt data={receiptData} t={t} onDone={handleDone} />}
         </div>
 
-        {/* Footer: Total + Continue (only in build step) */}
         {step === "build" && visitData.procedures.length > 0 && (
           <div className="shrink-0 border-t border-gray-100 px-6 py-4 bg-white">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between gap-3">
               <div>
                 <span className="text-xs text-foreground-muted/50">{t("total")}</span>
-                <span className="ml-2 text-lg font-bold text-primary-dark">
-                  {pricesLoading ? "..." : `${subtotal} ₾`}
-                </span>
+                <span className="ml-2 text-lg font-bold text-primary-dark">{pricesLoading ? "..." : `${subtotal} ₾`}</span>
+                {invalid && <p className="text-xs text-red-600">{t("requiredMissing")}</p>}
               </div>
-              <button
-                onClick={() => setStep("pay")}
-                disabled={!canProceedToPayment}
-                className="rounded-xl bg-primary px-6 py-2.5 text-sm font-bold text-white hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
-              >
+              <button onClick={() => setStep("pay")} disabled={!canProceedToPayment} className="rounded-xl bg-primary px-6 py-2.5 text-sm font-bold text-white hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer">
                 {t("continueToPayment")} →
               </button>
             </div>
@@ -960,271 +705,47 @@ export function VisitBuilder({
 
 /* ─── ProcedureCard ─── */
 
+type VisitT = ReturnType<typeof useTranslations<"visit">>;
+
 interface ProcedureCardProps {
   proc: ProcedureEntry;
+  form: ProcedureForm | undefined;
   expanded: boolean;
   onToggle: () => void;
-  onChange: (updates: Partial<ProcedureEntry>) => void;
+  onPrice: (price: string) => void;
+  onValue: (column: string, value: string) => void;
   onRemove: () => void;
   locale: string;
-  t: ReturnType<typeof useTranslations<"visit">>;
-  vaccineOpts?: { vaccines: SelectOption[]; brands: SelectOption[] };
-  testOpts?: SelectOption[];
-  dehelOpts?: SelectOption[];
-  ectoOpts?: { drops: SelectOption[]; collars: SelectOption[]; tablets: SelectOption[] };
+  t: VisitT;
   pricesLoading: boolean;
 }
 
-function ProcedureCard({
-  proc, expanded, onToggle, onChange, onRemove, locale, t,
-  vaccineOpts, testOpts, dehelOpts, ectoOpts, pricesLoading,
-}: ProcedureCardProps) {
-  const config = getFieldConfig(proc.tp);
-  const options = getDropdownOptions(config, vaccineOpts, testOpts, dehelOpts, ectoOpts);
-  const brandOptions = getBrandOptions(config, vaccineOpts);
-  const localizedName = localizeProcedureType(proc.tpname, locale);
-
-  const isRequiredMissing = config.requiredFields?.some((f: string) => {
-    const val = proc[f as keyof ProcedureEntry];
-    return val === undefined || val === "";
-  });
-
-  const inputClass = "mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary";
-  const labelClass = "text-[10px] font-semibold uppercase tracking-wider text-foreground-muted/50";
-
-  /** Get test result value from the correct field */
-  const getTestVal = (field: string): string => proc[field as keyof ProcedureEntry] as string ?? "";
-  const setTestVal = (field: string, val: string) => onChange({ [field]: val });
-
+function ProcedureCard({ proc, form, expanded, onToggle, onPrice, onValue, onRemove, locale, t, pricesLoading }: ProcedureCardProps) {
+  const missing = missingFields(proc, form);
+  const badPrice = proc.price.trim() !== "" && !PRICE_RE.test(proc.price.trim());
   return (
-    <div className={`rounded-xl border transition-all ${isRequiredMissing ? "border-amber-200" : "border-gray-100"} bg-white hover:shadow-[0_2px_12px_rgba(0,0,0,0.04)]`}>
-      {/* Header */}
+    <div className={`rounded-xl border bg-white ${missing.length || badPrice ? "border-red-200" : "border-gray-100"}`}>
       <div className="flex items-center gap-3 px-4 py-3">
-        <button onClick={onToggle} className="flex-1 flex items-center gap-3 text-left cursor-pointer">
-          <svg className={`h-4 w-4 text-foreground-muted/40 transition-transform ${expanded ? "rotate-90" : ""}`} viewBox="0 0 20 20" fill="currentColor">
-            <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
-          </svg>
-          <span className="font-medium text-sm text-primary-dark">{localizedName}</span>
-          {proc.vac && <span className="text-xs text-foreground-muted/50">{proc.vac}</span>}
+        <button onClick={onToggle} className="flex-1 min-w-0 text-left cursor-pointer">
+          <span className="text-sm font-semibold text-primary-dark">{localizeProcedureType(proc.tpname, locale)}</span>
+          {proc.values.vac && <span className="ml-2 text-xs text-foreground-muted/60">{proc.values.vac}</span>}
+          {missing.length > 0 && <span className="ml-2 text-xs text-red-600">{t("requiredMissing")}</span>}
         </button>
-        <div className="flex items-center gap-2">
-          <div className="flex items-center gap-1">
-            <input
-              type="number"
-              value={proc.price}
-              onChange={(e) => onChange({ price: e.target.value })}
-              placeholder={pricesLoading ? "..." : "0"}
-              className="w-16 rounded-lg border border-gray-200 px-2 py-1 text-sm text-right focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-              onClick={(e) => e.stopPropagation()}
-            />
-            <span className="text-xs text-foreground-muted/50">₾</span>
-          </div>
-          <button
-            onClick={(e) => { e.stopPropagation(); onRemove(); }}
-            className="flex h-7 w-7 items-center justify-center rounded-lg text-foreground-muted/40 hover:bg-red-50 hover:text-red-500 transition-colors cursor-pointer"
-          >
-            <svg className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-              <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
-            </svg>
-          </button>
+        <div className="flex items-center gap-1">
+          <input
+            type="text" inputMode="decimal" value={proc.price}
+            onChange={(e) => onPrice(e.target.value)}
+            placeholder={pricesLoading ? "..." : t("price")}
+            aria-label={t("price")}
+            className={`w-20 rounded-lg border px-2 py-1.5 text-right text-sm ${badPrice ? "border-red-400" : "border-gray-200"}`}
+          />
+          <span className="text-sm text-foreground-muted">₾</span>
         </div>
+        <button onClick={onRemove} aria-label={t("remove")} className="flex h-7 w-7 items-center justify-center rounded-lg text-foreground-muted/50 hover:bg-red-50 hover:text-red-600 cursor-pointer">×</button>
       </div>
-
-      {/* Expanded fields */}
       {expanded && (
-        <div className="border-t border-gray-50 px-4 py-3 space-y-3">
-
-          {/* ── Vaccination: vac dropdown + brand + serial + next date ── */}
-          {config.dropdownSource === "vaccine" && (
-            <>
-              <div>
-                <label className={labelClass}>
-                  {t("selectType")} {config.requiredFields?.includes("vac") && <span className="text-red-400">*</span>}
-                </label>
-                <select value={proc.vac} onChange={(e) => onChange({ vac: e.target.value })} className={`${inputClass} bg-white`}>
-                  <option value="">{t("select")}</option>
-                  {options.map((opt: { value: string; label: string }) => (
-                    <option key={opt.value} value={opt.value}>{opt.label}</option>
-                  ))}
-                </select>
-              </div>
-              {brandOptions.length > 0 && (
-                <div>
-                  <label className={labelClass}>{t("brand")}</label>
-                  <select value={proc.vacn} onChange={(e) => onChange({ vacn: e.target.value })} className={`${inputClass} bg-white`}>
-                    <option value="">{t("select")}</option>
-                    {brandOptions.map((opt: { value: string; label: string }) => (
-                      <option key={opt.value} value={opt.value}>{opt.label}</option>
-                    ))}
-                  </select>
-                </div>
-              )}
-              <div>
-                <label className={labelClass}>{t("serial")}</label>
-                <input type="text" value={proc.ser} onChange={(e) => onChange({ ser: e.target.value })} placeholder={t("serialPlaceholder")} className={inputClass} />
-              </div>
-            </>
-          )}
-
-          {/* ── Dehelminization: dehel drug dropdown + "other" free text ── */}
-          {config.hasDeh && (
-            <>
-              <div>
-                <label className={labelClass}>{t("dehelDrug")}</label>
-                <select value={proc.deh} onChange={(e) => onChange({ deh: e.target.value })} className={`${inputClass} bg-white`}>
-                  <option value="">{t("select")}</option>
-                  {options.map((opt: { value: string; label: string }) => (
-                    <option key={opt.value} value={opt.value}>{opt.label}</option>
-                  ))}
-                  <option value="სხვა">{t("other")}</option>
-                </select>
-              </div>
-              {proc.deh === "სხვა" && (
-                <div>
-                  <label className={labelClass}>{t("other")}</label>
-                  <input type="text" value={proc.vac} onChange={(e) => onChange({ vac: e.target.value })} placeholder={t("otherPlaceholder")} className={inputClass} />
-                </div>
-              )}
-            </>
-          )}
-
-          {/* ── Ectoparasite: 4 category dropdowns matching PHP ── */}
-          {config.ectoCategories && ectoOpts && (
-            <>
-              {ECTO_CATEGORIES.map((cat) => {
-                const catOptions = ectoOpts[cat.optionsKey as keyof typeof ectoOpts] as SelectOption[] | undefined ?? [];
-                const selectVal = getTestVal(cat.selectField);
-                const otherVal = getTestVal(cat.otherField);
-                return (
-                  <div key={cat.id}>
-                    <label className={labelClass}>{cat.label}</label>
-                    <select
-                      value={selectVal}
-                      onChange={(e) => setTestVal(cat.selectField, e.target.value)}
-                      className={`${inputClass} bg-white`}
-                    >
-                      <option value="">{t("select")}</option>
-                      {catOptions.map((opt: { value: string; label: string }) => (
-                        <option key={opt.value} value={opt.value}>{opt.label}</option>
-                      ))}
-                      <option value="სხვა">{t("other")}</option>
-                    </select>
-                    {selectVal === "სხვა" && (
-                      <input
-                        type="text"
-                        value={otherVal}
-                        onChange={(e) => setTestVal(cat.otherField, e.target.value)}
-                        placeholder={t("otherPlaceholder")}
-                        className={`${inputClass} mt-1`}
-                      />
-                    )}
-                  </div>
-                );
-              })}
-            </>
-          )}
-
-          {/* ── Test: Named test panels with pos/neg radio buttons ── */}
-          {config.hasTestPanels && (
-            <div className="space-y-2">
-              {TEST_PANELS.map((panel) => {
-                const isGroup = !!panel.subtests;
-                return (
-                  <div key={panel.id} className="rounded-lg border border-gray-100 overflow-hidden">
-                    <div className="bg-gray-50 px-3 py-2 text-xs font-semibold text-primary-dark">{panel.label}</div>
-                    <div className="px-3 py-2">
-                      {isGroup ? (
-                        <div className="grid grid-cols-2 gap-x-4 gap-y-2">
-                          {panel.subtests!.map((sub) => (
-                            <div key={sub.field}>
-                              <span className="text-xs font-medium text-foreground-muted/70">{sub.label}</span>
-                              <div className="flex gap-3 mt-1">
-                                <label className="flex items-center gap-1 text-xs cursor-pointer">
-                                  <input
-                                    type="radio"
-                                    name={`${proc.clientId}-${sub.field}`}
-                                    checked={getTestVal(sub.field) === "უარყოფითი"}
-                                    onChange={() => setTestVal(sub.field, "უარყოფითი")}
-                                    className="accent-primary"
-                                  />
-                                  {t("negative")}
-                                </label>
-                                <label className="flex items-center gap-1 text-xs cursor-pointer">
-                                  <input
-                                    type="radio"
-                                    name={`${proc.clientId}-${sub.field}`}
-                                    checked={getTestVal(sub.field) === "დადებითი"}
-                                    onChange={() => setTestVal(sub.field, "დადებითი")}
-                                    className="accent-primary"
-                                  />
-                                  {t("positive")}
-                                </label>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <div className="flex gap-4">
-                          <label className="flex items-center gap-1.5 text-xs cursor-pointer">
-                            <input
-                              type="radio"
-                              name={`${proc.clientId}-${panel.field}`}
-                              checked={getTestVal(panel.field) === "უარყოფითი"}
-                              onChange={() => setTestVal(panel.field, "უარყოფითი")}
-                              className="accent-primary"
-                            />
-                            {t("negative")}
-                          </label>
-                          <label className="flex items-center gap-1.5 text-xs cursor-pointer">
-                            <input
-                              type="radio"
-                              name={`${proc.clientId}-${panel.field}`}
-                              checked={getTestVal(panel.field) === "დადებითი"}
-                              onChange={() => setTestVal(panel.field, "დადებითი")}
-                              className="accent-primary"
-                            />
-                            {t("positive")}
-                          </label>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-
-          {/* ── Next due date ── */}
-          {config.hasDate2 && (
-            <div>
-              <label className={labelClass}>{t("nextDueDate")}</label>
-              <input type="date" value={proc.date2} onChange={(e) => onChange({ date2: e.target.value })} className={inputClass} />
-            </div>
-          )}
-
-          {/* ── Treatment ── */}
-          {config.hasNout && (
-            <div>
-              <label className={labelClass}>{t("treatment")}</label>
-              <input type="text" value={proc.nout} onChange={(e) => onChange({ nout: e.target.value })} placeholder={t("treatmentPlaceholder")} className={inputClass} />
-            </div>
-          )}
-
-          {/* ── Prescription ── */}
-          {config.hasDani && (
-            <div>
-              <label className={labelClass}>{t("prescription")}</label>
-              <input type="text" value={proc.dani} onChange={(e) => onChange({ dani: e.target.value })} placeholder={t("prescriptionPlaceholder")} className={inputClass} />
-            </div>
-          )}
-
-          {/* ── Comment ── */}
-          {config.hasComent && (
-            <div>
-              <label className={labelClass}>{t("ownerComment")}</label>
-              <input type="text" value={proc.coment} onChange={(e) => onChange({ coment: e.target.value })} placeholder={t("ownerCommentPlaceholder")} className={inputClass} />
-            </div>
-          )}
+        <div className="border-t border-gray-50 px-4 py-3">
+          {!form ? <p className="text-xs text-foreground-muted/60">{t("loading")}</p> : <ProcedureFieldInputs form={form} values={proc.values} onChange={onValue} />}
         </div>
       )}
     </div>
@@ -1235,12 +756,11 @@ function ProcedureCard({
 
 interface ReceiptProps {
   data: ReceiptData;
-  t: ReturnType<typeof useTranslations<"visit">>;
-  locale: string;
+  t: VisitT;
   onDone: () => void;
 }
 
-function Receipt({ data, t, locale, onDone }: ReceiptProps) {
+function Receipt({ data, t, onDone }: ReceiptProps) {
   const handlePrint = () => window.print();
 
   return (

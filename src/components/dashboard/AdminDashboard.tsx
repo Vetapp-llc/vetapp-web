@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { AdminTabs, MembersPanel, SmsPanel, TransactionsPanel } from "@/components/dashboard/views/AdminViews";
 import { useTranslations } from "next-intl";
 import { useAdminStats, useClinicStatsForAdmin } from "@/lib/hooks/useAdminData";
 import { DailyRevenueSection } from "@/components/dashboard/DailyRevenueSection";
@@ -243,20 +244,33 @@ function SystemOverview({
    ─── ADMIN DASHBOARD ───
    ═══════════════════════════════════════════ */
 export function AdminDashboard() {
+  const [tab, setTab] = useState("stats");
   const [selectedClinic, setSelectedClinic] = useState<{
     code: string;
     name: string;
   } | null>(null);
 
-  return selectedClinic ? (
-    <ClinicDrillDown
-      clinicCode={selectedClinic.code}
-      clinicName={selectedClinic.name}
-      onBack={() => setSelectedClinic(null)}
-    />
-  ) : (
-    <SystemOverview
-      onSelectClinic={(code, name) => setSelectedClinic({ code, name })}
-    />
+  let body: React.ReactNode;
+  if (tab === "members") body = <MembersPanel />;
+  else if (tab === "transactions") body = <TransactionsPanel />;
+  else if (tab === "sms") body = <SmsPanel />;
+  else
+    body = selectedClinic ? (
+      <ClinicDrillDown
+        clinicCode={selectedClinic.code}
+        clinicName={selectedClinic.name}
+        onBack={() => setSelectedClinic(null)}
+      />
+    ) : (
+      <SystemOverview
+        onSelectClinic={(code, name) => setSelectedClinic({ code, name })}
+      />
+    );
+
+  return (
+    <>
+      <AdminTabs value={tab} onChange={setTab} />
+      {body}
+    </>
   );
 }

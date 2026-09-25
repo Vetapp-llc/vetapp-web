@@ -13,7 +13,7 @@ interface OwnerDetailModalProps {
   open: boolean;
   personalId: string | null;
   onClose: () => void;
-  onViewPet: (petId: string) => void;
+  onViewPet: (petId: string, ownerProof?: string) => void;
 }
 
 export function OwnerDetailModal({ open, personalId, onClose, onViewPet }: OwnerDetailModalProps) {
@@ -108,7 +108,7 @@ export function OwnerDetailModal({ open, personalId, onClose, onViewPet }: Owner
                   {owner.pets.map((pet: { id: string; name: string; species: string; breed: string; sex: string }) => (
                     <button
                       key={pet.id}
-                      onClick={() => onViewPet(String(pet.id))}
+                      onClick={() => onViewPet(String(pet.id), personalId ?? undefined)}
                       className="group w-full rounded-xl border border-gray-100 bg-white p-4 text-left transition-all hover:shadow-[0_4px_16px_rgba(0,0,0,0.06)] hover:border-primary/20 cursor-pointer"
                     >
                       <div className="flex items-center gap-3">

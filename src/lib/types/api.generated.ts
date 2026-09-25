@@ -4,6 +4,151 @@
  */
 
 export interface paths {
+    "/admin/members": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List accounts (admin) */
+        get: {
+            parameters: {
+                query?: {
+                    /** @description 1 owner (default), 2 vet, 3 department, 4 admin */
+                    group?: number;
+                    /** @description Name, personal ID, email or phone */
+                    search?: string;
+                    /** @description Page */
+                    page?: number;
+                    /** @description Page size */
+                    pageSize?: number;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handlers.PaginatedResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/members/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Disable an account (admin) */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Member ID */
+                    id: number;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handlers.MessageResponse"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handlers.ErrorResponse"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handlers.ErrorResponse"];
+                    };
+                };
+            };
+        };
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/transactions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Subscription payment log (admin) */
+        get: {
+            parameters: {
+                query?: {
+                    /** @description Filter by status */
+                    status?: string;
+                    /** @description Page */
+                    page?: number;
+                    /** @description Page size */
+                    pageSize?: number;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handlers.PaginatedResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/allergies": {
         parameters: {
             query?: never;
@@ -161,54 +306,16 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/appointments": {
+    "/auth/change-password": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        /** List appointments */
-        get: {
-            parameters: {
-                query?: {
-                    /** @description Clinic code */
-                    clinic?: string;
-                    /** @description Start date (YYYY-MM-DD) */
-                    date_from?: string;
-                    /** @description End date (YYYY-MM-DD) */
-                    date_to?: string;
-                    /** @description Vet member ID */
-                    vet_id?: string;
-                };
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description OK */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["internal_handlers.AppointmentResponse"][];
-                    };
-                };
-                /** @description Internal Server Error */
-                500: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["internal_handlers.ErrorResponse"];
-                    };
-                };
-            };
-        };
+        get?: never;
         put?: never;
-        /** Book appointment */
+        /** Change password */
         post: {
             parameters: {
                 query?: never;
@@ -216,20 +323,20 @@ export interface paths {
                 path?: never;
                 cookie?: never;
             };
-            /** @description Appointment data */
+            /** @description Current and new password */
             requestBody: {
                 content: {
-                    "application/json": components["schemas"]["internal_handlers.CreateAppointmentRequest"];
+                    "application/json": components["schemas"]["internal_handlers.ChangePasswordRequest"];
                 };
             };
             responses: {
-                /** @description Created */
-                201: {
+                /** @description OK */
+                200: {
                     headers: {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["internal_handlers.AppointmentResponse"];
+                        "application/json": components["schemas"]["internal_handlers.ChangePasswordResponse"];
                     };
                 };
                 /** @description Bad Request */
@@ -241,8 +348,8 @@ export interface paths {
                         "application/json": components["schemas"]["internal_handlers.ErrorResponse"];
                     };
                 };
-                /** @description Internal Server Error */
-                500: {
+                /** @description Unauthorized */
+                401: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -258,23 +365,19 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/appointments/slots": {
+    "/auth/email/verify/confirm": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        /** Get available time slots */
+        /** Confirm email verification */
         get: {
             parameters: {
                 query: {
-                    /** @description Clinic code */
-                    clinic?: string;
-                    /** @description Vet member ID */
-                    vet_id?: string;
-                    /** @description Date (YYYY-MM-DD) */
-                    date: string;
+                    /** @description Verification token from the email link */
+                    token: string;
                 };
                 header?: never;
                 path?: never;
@@ -282,22 +385,22 @@ export interface paths {
             };
             requestBody?: never;
             responses: {
-                /** @description OK */
+                /** @description HTML success page */
                 200: {
                     headers: {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["internal_handlers.TimeSlot"][];
+                        "text/html": string;
                     };
                 };
-                /** @description Bad Request */
+                /** @description HTML error page */
                 400: {
                     headers: {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["internal_handlers.ErrorResponse"];
+                        "text/html": string;
                     };
                 };
             };
@@ -310,7 +413,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/appointments/{id}": {
+    "/auth/email/verify/send": {
         parameters: {
             query?: never;
             header?: never;
@@ -318,91 +421,28 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
-        /** Update appointment */
-        put: {
+        put?: never;
+        /** Send email verification */
+        post: {
             parameters: {
                 query?: never;
                 header?: never;
-                path: {
-                    /** @description Appointment ID */
-                    id: number;
-                };
-                cookie?: never;
-            };
-            requestBody: components["requestBodies"]["Body"];
-            responses: {
-                /** @description OK */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["internal_handlers.AppointmentResponse"];
-                    };
-                };
-                /** @description Bad Request */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["internal_handlers.ErrorResponse"];
-                    };
-                };
-                /** @description Not Found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["internal_handlers.ErrorResponse"];
-                    };
-                };
-                /** @description Internal Server Error */
-                500: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["internal_handlers.ErrorResponse"];
-                    };
-                };
-            };
-        };
-        post?: never;
-        /** Cancel appointment */
-        delete: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    /** @description Appointment ID */
-                    id: number;
-                };
+                path?: never;
                 cookie?: never;
             };
             requestBody?: never;
             responses: {
-                /** @description OK */
-                200: {
+                /** @description Accepted */
+                202: {
                     headers: {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["internal_handlers.MessageResponse"];
+                        "application/json": components["schemas"]["internal_handlers.EmailVerifySendResponse"];
                     };
                 };
-                /** @description Not Found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["internal_handlers.ErrorResponse"];
-                    };
-                };
-                /** @description Internal Server Error */
-                500: {
+                /** @description Unauthorized */
+                401: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -410,68 +450,8 @@ export interface paths {
                         "application/json": components["schemas"]["internal_handlers.ErrorResponse"];
                     };
                 };
-            };
-        };
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/appointments/{id}/slot": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        /** Assign time slot */
-        put: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    /** @description Appointment ID */
-                    id: number;
-                };
-                cookie?: never;
-            };
-            /** @description Slot assignment */
-            requestBody: {
-                content: {
-                    "application/json": components["schemas"]["internal_handlers.AssignSlotRequest"];
-                };
-            };
-            responses: {
-                /** @description OK */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["internal_handlers.AppointmentResponse"];
-                    };
-                };
-                /** @description Bad Request */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["internal_handlers.ErrorResponse"];
-                    };
-                };
-                /** @description Not Found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["internal_handlers.ErrorResponse"];
-                    };
-                };
-                /** @description Internal Server Error */
-                500: {
+                /** @description email already verified */
+                409: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -481,7 +461,6 @@ export interface paths {
                 };
             };
         };
-        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -593,7 +572,59 @@ export interface paths {
                 };
             };
         };
-        put?: never;
+        /** Update current user profile */
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            /** @description Fields to update */
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["internal_handlers.UpdateMeRequest"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handlers.UserResponse"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handlers.ErrorResponse"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handlers.ErrorResponse"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handlers.ErrorResponse"];
+                    };
+                };
+            };
+        };
         post?: never;
         delete?: never;
         options?: never;
@@ -921,10 +952,8 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
-        put?: never;
-        /** Send SMS reminders */
-        post: {
+        /** Preview today's SMS reminders */
+        get: {
             parameters: {
                 query?: never;
                 header?: never;
@@ -939,16 +968,32 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["internal_handlers.ReminderResult"];
+                        "application/json": components["schemas"]["internal_handlers.ReminderPreview"];
                     };
                 };
-                /** @description Internal Server Error */
-                500: {
+            };
+        };
+        put?: never;
+        /** Send today's SMS reminders */
+        post: {
+            parameters: {
+                query?: {
+                    /** @description expired,birthday,procedure (default all) */
+                    kinds?: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
                     headers: {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["internal_handlers.ErrorResponse"];
+                        "application/json": components["schemas"]["internal_handlers.ReminderResult"];
                     };
                 };
             };
@@ -1247,6 +1292,248 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/owner/pets/{id}/diseases": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get pet diseases / allergies (owner view) */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Pet ID */
+                    id: number;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handlers.OwnerDiseaseItem"][];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handlers.ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/owner/pets/{id}/home-procedures": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List home procedures */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Pet ID */
+                    id: number;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handlers.HomeProcedureItem"][];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handlers.ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        /** Add home procedure */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Pet ID */
+                    id: number;
+                };
+                cookie?: never;
+            };
+            /** @description Procedure */
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["internal_handlers.CreateHomeProcedureRequest"];
+                };
+            };
+            responses: {
+                /** @description Created */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handlers.HomeProcedureItem"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handlers.ErrorResponse"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handlers.ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/owner/pets/{id}/home-procedures/{hpId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete home procedure */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Pet ID */
+                    id: number;
+                    /** @description Home procedure ID */
+                    hpId: number;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handlers.MessageResponse"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handlers.ErrorResponse"];
+                    };
+                };
+            };
+        };
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/owner/pets/{id}/home-procedures/{hpId}/done": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Mark home procedure done */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Pet ID */
+                    id: number;
+                    /** @description Home procedure ID */
+                    hpId: number;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Created */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handlers.HomeProcedureItem"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handlers.ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/owner/pets/{id}/procedures": {
         parameters: {
             query?: never;
@@ -1291,8 +1578,324 @@ export interface paths {
             };
         };
         put?: never;
-        post?: never;
+        /** Owner adds procedure to pet */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Pet ID */
+                    id: number;
+                };
+                cookie?: never;
+            };
+            /** @description Procedure data */
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["internal_handlers.OwnerCreateProcedureRequest"];
+                };
+            };
+            responses: {
+                /** @description Created */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handlers.OwnerProcedureItem"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handlers.ErrorResponse"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handlers.ErrorResponse"];
+                    };
+                };
+                /** @description Internal Server Error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handlers.ErrorResponse"];
+                    };
+                };
+            };
+        };
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/owner/pets/{id}/procedures/{procId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Owner deletes self-added procedure */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Pet ID */
+                    id: number;
+                    /** @description Procedure ID */
+                    procId: number;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handlers.MessageResponse"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handlers.ErrorResponse"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handlers.ErrorResponse"];
+                    };
+                };
+                /** @description Internal Server Error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handlers.ErrorResponse"];
+                    };
+                };
+            };
+        };
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/owner/pets/{id}/procedures/{procId}/files": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List procedure attachments */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Pet ID */
+                    id: number;
+                    /** @description Procedure ID */
+                    procId: number;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handlers.ProcedureFileResponse"][];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handlers.ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        /** Upload a procedure attachment */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Pet ID */
+                    id: number;
+                    /** @description Procedure ID */
+                    procId: number;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "multipart/form-data": {
+                        /**
+                         * Format: binary
+                         * @description File to attach
+                         */
+                        file: string;
+                    };
+                };
+            };
+            responses: {
+                /** @description Created */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handlers.ProcedureFileResponse"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handlers.ErrorResponse"];
+                    };
+                };
+                /** @description Request Entity Too Large */
+                413: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handlers.ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/owner/pets/{id}/procedures/{procId}/files/{fileId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get a download link for an attachment */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Pet ID */
+                    id: number;
+                    /** @description Procedure ID */
+                    procId: number;
+                    /** @description File ID */
+                    fileId: number;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            [key: string]: string;
+                        };
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handlers.ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        /** Delete a procedure attachment */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Pet ID */
+                    id: number;
+                    /** @description Procedure ID */
+                    procId: number;
+                    /** @description File ID */
+                    fileId: number;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handlers.MessageResponse"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handlers.ErrorResponse"];
+                    };
+                };
+            };
+        };
         options?: never;
         head?: never;
         patch?: never;
@@ -1506,12 +2109,14 @@ export interface paths {
                 query?: {
                     /** @description Clinic code */
                     clinic?: string;
-                    /** @description Vet member ID */
-                    vet_id?: string;
                     /** @description Start date (YYYY-MM-DD) */
                     date_from?: string;
                     /** @description End date (YYYY-MM-DD) */
                     date_to?: string;
+                    /** @description Page number (default 1) */
+                    page?: number;
+                    /** @description Rows per page (default 50, max 200) */
+                    pageSize?: number;
                 };
                 header?: never;
                 path?: never;
@@ -1525,7 +2130,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["internal_handlers.PaymentResponse"][];
+                        "application/json": components["schemas"]["internal_handlers.PaginatedResponse"];
                     };
                 };
                 /** @description Internal Server Error */
@@ -1617,11 +2222,11 @@ export interface paths {
         get: {
             parameters: {
                 query?: {
-                    /** @description Search by name, phone, chip */
+                    /** @description Search own clinic by name, owner, phone, chip */
                     search?: string;
-                    /** @description Filter by owner personal ID */
+                    /** @description Exact owner personal ID (all clinics) */
                     owner_id?: string;
-                    /** @description Filter by microchip */
+                    /** @description Exact microchip (all clinics) */
                     chip?: string;
                     /** @description Page number */
                     page?: number;
@@ -1756,7 +2361,12 @@ export interface paths {
                 };
                 cookie?: never;
             };
-            requestBody: components["requestBodies"]["Body"];
+            /** @description Fields to change */
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["internal_handlers.UpdatePetRequest"];
+                };
+            };
             responses: {
                 /** @description OK */
                 200: {
@@ -1785,19 +2395,10 @@ export interface paths {
                         "application/json": components["schemas"]["internal_handlers.ErrorResponse"];
                     };
                 };
-                /** @description Internal Server Error */
-                500: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["internal_handlers.ErrorResponse"];
-                    };
-                };
             };
         };
         post?: never;
-        /** Delete pet */
+        /** Delete pet (admin) */
         delete: {
             parameters: {
                 query?: never;
@@ -1819,8 +2420,8 @@ export interface paths {
                         "application/json": components["schemas"]["internal_handlers.MessageResponse"];
                     };
                 };
-                /** @description Not Found */
-                404: {
+                /** @description Forbidden */
+                403: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -1828,8 +2429,8 @@ export interface paths {
                         "application/json": components["schemas"]["internal_handlers.ErrorResponse"];
                     };
                 };
-                /** @description Internal Server Error */
-                500: {
+                /** @description Not Found */
+                404: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -1851,7 +2452,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get pet certificate data */
+        /** Border crossing certificate */
         get: {
             parameters: {
                 query?: never;
@@ -1899,7 +2500,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get pet medical history */
+        /** Pet medical history */
         get: {
             parameters: {
                 query?: never;
@@ -1921,8 +2522,8 @@ export interface paths {
                         "application/json": components["schemas"]["internal_handlers.MedicalRecord"][];
                     };
                 };
-                /** @description Internal Server Error */
-                500: {
+                /** @description Not Found */
+                404: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -2161,6 +2762,10 @@ export interface paths {
                     pet_id?: string;
                     /** @description Procedure type code */
                     tp?: number;
+                    /** @description Page number (default 1) */
+                    page?: number;
+                    /** @description Rows per page (default 50, max 200) */
+                    pageSize?: number;
                 };
                 header?: never;
                 path?: never;
@@ -2174,7 +2779,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["vetapp-backend_internal_models.Procedure"][];
+                        "application/json": components["schemas"]["internal_handlers.PaginatedResponse"];
                     };
                 };
                 /** @description Internal Server Error */
@@ -2215,6 +2820,15 @@ export interface paths {
                 };
                 /** @description Bad Request */
                 400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handlers.ErrorResponse"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -2299,6 +2913,45 @@ export interface paths {
                     };
                     content: {
                         "application/json": components["schemas"]["internal_handlers.EctoOptionsResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/procedures/forms": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Procedure forms for a species */
+        get: {
+            parameters: {
+                query?: {
+                    /** @description dog | cat | other (or the Georgian species name) */
+                    species?: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handlers.ProcedureForm"][];
                     };
                 };
             };
@@ -2499,6 +3152,15 @@ export interface paths {
                         "application/json": components["schemas"]["internal_handlers.ErrorResponse"];
                     };
                 };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handlers.ErrorResponse"];
+                    };
+                };
                 /** @description Internal Server Error */
                 500: {
                     headers: {
@@ -2542,6 +3204,15 @@ export interface paths {
                         "application/json": components["schemas"]["internal_handlers.ErrorResponse"];
                     };
                 };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handlers.ErrorResponse"];
+                    };
+                };
                 /** @description Internal Server Error */
                 500: {
                     headers: {
@@ -2553,6 +3224,192 @@ export interface paths {
                 };
             };
         };
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/promo": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Owners who registered with this clinic's promo code */
+        get: {
+            parameters: {
+                query?: {
+                    /** @description Name, personal ID, email or phone */
+                    search?: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handlers.PaginatedResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/public/pets/code/{code}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Look up pet by PIN code */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description 4-digit access code */
+                    code: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handlers.PublicPetResponse"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handlers.ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/public/pets/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get public pet profile */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Pet ID */
+                    id: number;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handlers.PublicPetResponse"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handlers.ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/public/pets/{id}/procedures": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get public pet procedures */
+        get: {
+            parameters: {
+                query?: {
+                    /** @description Procedure type */
+                    tp?: number;
+                };
+                header?: never;
+                path: {
+                    /** @description Pet ID */
+                    id: number;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handlers.PublicProcedureItem"][];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handlers.ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -2575,6 +3432,10 @@ export interface paths {
                     date_from?: string;
                     /** @description End date (YYYY-MM-DD) */
                     date_to?: string;
+                    /** @description Page number (default 1) */
+                    page?: number;
+                    /** @description Rows per page (default 50, max 200) */
+                    pageSize?: number;
                 };
                 header?: never;
                 path?: never;
@@ -2588,7 +3449,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["internal_handlers.ShopResponse"][];
+                        "application/json": components["schemas"]["internal_handlers.PaginatedResponse"];
                     };
                 };
                 /** @description Internal Server Error */
@@ -2801,167 +3662,8 @@ export interface paths {
             };
         };
         put?: never;
-        /** Add staff member */
-        post: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            /** @description Staff data */
-            requestBody: {
-                content: {
-                    "application/json": components["schemas"]["internal_handlers.CreateStaffRequest"];
-                };
-            };
-            responses: {
-                /** @description Created */
-                201: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["internal_handlers.StaffResponse"];
-                    };
-                };
-                /** @description Bad Request */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["internal_handlers.ErrorResponse"];
-                    };
-                };
-                /** @description Conflict */
-                409: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["internal_handlers.ErrorResponse"];
-                    };
-                };
-                /** @description Internal Server Error */
-                500: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["internal_handlers.ErrorResponse"];
-                    };
-                };
-            };
-        };
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/staff/{id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        /** Update staff member */
-        put: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    /** @description Staff member ID */
-                    id: number;
-                };
-                cookie?: never;
-            };
-            requestBody: components["requestBodies"]["Body"];
-            responses: {
-                /** @description OK */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["internal_handlers.StaffResponse"];
-                    };
-                };
-                /** @description Bad Request */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["internal_handlers.ErrorResponse"];
-                    };
-                };
-                /** @description Not Found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["internal_handlers.ErrorResponse"];
-                    };
-                };
-                /** @description Internal Server Error */
-                500: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["internal_handlers.ErrorResponse"];
-                    };
-                };
-            };
-        };
         post?: never;
-        /** Remove staff member */
-        delete: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    /** @description Staff member ID */
-                    id: number;
-                };
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description OK */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["internal_handlers.MessageResponse"];
-                    };
-                };
-                /** @description Not Found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["internal_handlers.ErrorResponse"];
-                    };
-                };
-                /** @description Internal Server Error */
-                500: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["internal_handlers.ErrorResponse"];
-                    };
-                };
-            };
-        };
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -3057,6 +3759,251 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/stats/clinic/daily": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get daily clinic statistics */
+        get: {
+            parameters: {
+                query: {
+                    /** @description Date (YYYY-MM-DD) */
+                    date: string;
+                    /** @description Clinic code (admin only) */
+                    clinic?: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handlers.DailyClinicStats"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handlers.ErrorResponse"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handlers.ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/stats/clinic/monthly": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get monthly clinic statistics */
+        get: {
+            parameters: {
+                query: {
+                    /** @description Month (YYYY-MM) */
+                    month: string;
+                    /** @description Clinic code (admin only) */
+                    clinic?: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handlers.MonthlyClinicStats"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handlers.ErrorResponse"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handlers.ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/stats/clinic/yearly": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get yearly clinic statistics */
+        get: {
+            parameters: {
+                query: {
+                    /** @description Year (YYYY) */
+                    year: string;
+                    /** @description Clinic code (admin only) */
+                    clinic?: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handlers.YearlyClinicStats"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handlers.ErrorResponse"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handlers.ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/subscriptions/apple-verify": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Verify Apple IAP receipt */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            /** @description Apple IAP receipt */
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["internal_handlers.AppleVerifyRequest"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handlers.MessageResponse"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handlers.ErrorResponse"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handlers.ErrorResponse"];
+                    };
+                };
+                /** @description Internal Server Error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handlers.ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/subscriptions/callback": {
         parameters: {
             query?: never;
@@ -3066,7 +4013,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** iPay payment callback */
+        /** Card payment callback (BOG / iPay) */
         post: {
             parameters: {
                 query?: never;
@@ -3074,7 +4021,7 @@ export interface paths {
                 path?: never;
                 cookie?: never;
             };
-            /** @description iPay callback data */
+            /** @description Gateway callback data */
             requestBody: {
                 content: {
                     "application/json": Record<string, never>;
@@ -3248,28 +4195,19 @@ export interface components {
             total_vets: number;
         };
         "internal_handlers.AllergyResponse": {
+            comment: string;
             date: string;
             id: number;
+            /** @description Mine is true when the caller's clinic recorded it (and may delete it). */
+            mine: boolean;
             name: string;
             uuid: string;
         };
-        "internal_handlers.AppointmentResponse": {
-            date: string;
-            id: number;
-            koment: string;
-            owner: string;
-            ownern: string;
-            phone: string;
-            pname: string;
-            status: string;
-            time: string;
-            tpname: string;
-            uuid: string;
-            vetname: string;
-        };
-        "internal_handlers.AssignSlotRequest": {
-            time: string;
-            vetname?: string;
+        "internal_handlers.AppleVerifyRequest": {
+            package_id: number;
+            pet_id: number;
+            /** @description StoreKit 2 JWS signed transaction */
+            signed_transaction: string;
         };
         "internal_handlers.BreedCount": {
             breed: string;
@@ -3282,12 +4220,27 @@ export interface components {
             petName: string;
             type: string;
         };
+        "internal_handlers.CertificateOwner": {
+            address: string;
+            name: string;
+            personal_id: string;
+            phone: string;
+        };
         "internal_handlers.CertificateResponse": {
-            dehelminization: components["schemas"]["internal_handlers.MedicalRecord"];
-            ectoparasite: components["schemas"]["internal_handlers.MedicalRecord"];
-            pet: components["schemas"]["internal_handlers.PetListItem"];
-            rabies: components["schemas"]["internal_handlers.MedicalRecord"];
-            vaccination: components["schemas"]["internal_handlers.MedicalRecord"];
+            complex?: components["schemas"]["vetapp-backend_internal_models.Procedure"];
+            dehelminization?: components["schemas"]["vetapp-backend_internal_models.Procedure"];
+            ectoparasite?: components["schemas"]["vetapp-backend_internal_models.Procedure"];
+            owner: components["schemas"]["internal_handlers.CertificateOwner"];
+            pet: components["schemas"]["vetapp-backend_internal_models.Pet"];
+            rabies?: components["schemas"]["vetapp-backend_internal_models.Procedure"];
+        };
+        "internal_handlers.ChangePasswordRequest": {
+            current_password: string;
+            /** @description 8 chars matches the registration / reset minimum used elsewhere. */
+            new_password: string;
+        };
+        "internal_handlers.ChangePasswordResponse": {
+            ok: boolean;
         };
         "internal_handlers.CheckoutRequest": {
             package_id: number;
@@ -3295,10 +4248,18 @@ export interface components {
         };
         "internal_handlers.CheckoutResponse": {
             order_id: string;
+            /**
+             * @description Provider tells the client which gateway served this checkout
+             *     ("bog" or "ipay"). Clients shouldn't branch on it for the happy
+             *     path — both are a WebView redirect — but it makes support
+             *     tickets and client-side logs far easier to trace back.
+             */
+            provider?: string;
             redirect_url: string;
         };
         "internal_handlers.ClinicPetCount": {
             clinic: string;
+            company_name?: string;
             count: number;
         };
         "internal_handlers.ClinicStats": {
@@ -3313,36 +4274,23 @@ export interface components {
             totalRecords: number;
         };
         "internal_handlers.CreateAllergyRequest": {
-            /** @description Date recorded */
+            /** @description Free-text note */
+            comment?: string;
+            /** @description Date recorded; defaults to today */
             date?: string;
             /** @description Allergy name */
             name: string;
             /** @description Pet ID */
             uuid: string;
         };
-        "internal_handlers.CreateAppointmentRequest": {
-            /** @description Date (YYYY-MM-DD) */
-            date: string;
-            /** @description Notes */
-            koment?: string;
-            /** @description Owner personal ID */
-            owner?: string;
-            /** @description Owner name */
-            ownern?: string;
-            /** @description Owner phone */
-            phone?: string;
-            /** @description Pet name */
-            pname?: string;
-            /** @description Status */
-            status?: string;
-            /** @description Time slot */
-            time?: string;
-            /** @description Procedure type */
-            tpname?: string;
-            /** @description Pet ID */
-            uuid: string;
+        "internal_handlers.CreateHomeProcedureRequest": {
+            days: number;
+            name: string;
+            /** @description defaults to today */
+            start_date?: string;
         };
         "internal_handlers.CreatePetRequest": {
+            address?: string;
             chip?: string;
             code?: string;
             color?: string;
@@ -3353,6 +4301,7 @@ export interface components {
             pet?: string;
             phone?: string;
             sex?: string;
+            status?: number;
             uuid: string;
             variety?: string;
         };
@@ -3361,12 +4310,24 @@ export interface components {
             price: string;
         };
         "internal_handlers.CreateProcedureRequest": {
+            /**
+             * @description Address and Sax are test-result columns on the dog test (Giardia and
+             *     Erlichia canis, see procedure_forms.go). On every other tp they hold
+             *     the owner address / pet sex and are filled from the pet instead.
+             */
+            address?: string;
             anam?: string;
+            /**
+             * @description Chip is the microchip number for tp=115. It is written to the pet
+             *     record as well as the procedure (PHP stores it in `coment` too).
+             */
+            chip?: string;
             coment?: string;
             dani?: string;
             date?: string;
             date2?: string;
             date3?: string;
+            deh?: string;
             diagn?: string;
             koment?: string;
             nout?: string;
@@ -3375,6 +4336,16 @@ export interface components {
             phone?: string;
             pname?: string;
             price?: string;
+            sax?: string;
+            ser?: string;
+            test1?: string;
+            test2?: string;
+            test3?: string;
+            test4?: string;
+            test5?: string;
+            test6?: string;
+            test7?: string;
+            test8?: string;
             tp: number;
             tpname?: string;
             uuid: string;
@@ -3389,18 +4360,27 @@ export interface components {
             vac8?: string;
             vac9?: string;
             vacn?: string;
+            /**
+             * @description VetName is the member id of the vet who performed the procedure,
+             *     chosen from the clinic's staff (PHP's "ვეტერინარი" dropdown).
+             *     Defaults to the caller. Must be a vet at the caller's clinic.
+             */
+            vetname?: string;
         };
         "internal_handlers.CreateShopRequest": {
+            comment?: string;
             date: string;
+            /** @enum {string} */
+            method?: "card" | "cash";
             name: string;
             price: string;
         };
-        "internal_handlers.CreateStaffRequest": {
-            email: string;
-            first_name: string;
-            last_name: string;
-            password: string;
-            phone?: string;
+        "internal_handlers.DailyClinicStats": {
+            card?: string;
+            cash?: string;
+            date?: string;
+            procedures?: components["schemas"]["internal_handlers.ProcedureTypeRevenue"][];
+            total?: string;
         };
         "internal_handlers.DailySummary": {
             card: string;
@@ -3408,13 +4388,53 @@ export interface components {
             date: string;
             total: string;
         };
+        "internal_handlers.DailyTotal": {
+            count?: number;
+            date?: string;
+            total?: string;
+        };
         "internal_handlers.EctoOptionsResponse": {
             collars: components["schemas"]["internal_handlers.SelectOption"][];
             drops: components["schemas"]["internal_handlers.SelectOption"][];
+            sprays: components["schemas"]["internal_handlers.SelectOption"][];
             tablets: components["schemas"]["internal_handlers.SelectOption"][];
+        };
+        "internal_handlers.EmailVerifySendResponse": {
+            /** @description human-readable note */
+            detail?: string;
+            /** @description "sent" | "pending" */
+            status: string;
         };
         "internal_handlers.ErrorResponse": {
             error: string;
+        };
+        "internal_handlers.FormField": {
+            column: string;
+            depends_on?: string;
+            /** @description panel heading for grouped test results */
+            group?: string;
+            /** @description Kind: text | textarea | select | result (positive/negative) | date | money */
+            kind: string;
+            label: string;
+            /**
+             * @description Options for a select. With DependsOn set, OptionsBy holds one list
+             *     per value of that field (vaccine brand by vaccine type).
+             */
+            options?: string[];
+            options_by?: {
+                [key: string]: string[];
+            };
+            required?: boolean;
+        };
+        "internal_handlers.HomeProcedureItem": {
+            active: boolean;
+            days: number;
+            /** @description "YYYY-MM-DD HH:MM", newest first */
+            done: string[];
+            end_date: string;
+            id: number;
+            name: string;
+            start_date: string;
         };
         "internal_handlers.LoginRequest": {
             email: string;
@@ -3442,6 +4462,17 @@ export interface components {
         "internal_handlers.MessageResponse": {
             message: string;
         };
+        "internal_handlers.MonthlyClinicStats": {
+            dailyBreakdown?: components["schemas"]["internal_handlers.DailyTotal"][];
+            month?: string;
+            procedures?: components["schemas"]["internal_handlers.ProcedureTypeRevenue"][];
+            total?: string;
+        };
+        "internal_handlers.MonthlyTotal": {
+            count?: number;
+            month?: string;
+            total?: string;
+        };
         "internal_handlers.MonthlyTrendItem": {
             month: string;
             records: number;
@@ -3467,18 +4498,59 @@ export interface components {
             date?: string;
             name: string;
             pet?: string;
+            /** @description INHABITANT | ADOPTED | WORKMATE */
+            petStatus?: string;
             sex?: string;
             variety?: string;
+        };
+        "internal_handlers.OwnerCreateProcedureRequest": {
+            anam?: string;
+            coment?: string;
+            dani?: string;
+            date?: string;
+            date2?: string;
+            date3?: string;
+            deh?: string;
+            diagn?: string;
+            nout?: string;
+            ser?: string;
+            tp: number;
+            tpname?: string;
+            vac?: string;
+            vac1?: string;
+            vac2?: string;
+            vac3?: string;
+            vac4?: string;
+            vac5?: string;
+            vac6?: string;
+            vac7?: string;
+            vac8?: string;
+            vac9?: string;
+            vacn?: string;
+        };
+        "internal_handlers.OwnerDiseaseItem": {
+            date?: string;
+            id: string;
+            name: string;
+        };
+        "internal_handlers.OwnerEctoItem": {
+            /** @description brand / preparat name */
+            name: string;
+            /** @description "drops" | "pills" | "collar" | "spray" */
+            type: string;
         };
         "internal_handlers.OwnerPetDetail": {
             birth?: string;
             breed: string;
             castrated: boolean;
+            categories?: components["schemas"]["internal_handlers.ProcedureCategoryCount"][];
             chip: string;
             code: string;
             color: string;
             id: string;
             name: string;
+            /** @description "INHABITANT", "ADOPTED", "WORKMATE" */
+            petStatus?: string;
             sex: string;
             species: string;
             subscriptionExpiry?: string;
@@ -3494,6 +4566,8 @@ export interface components {
             color: string;
             id: string;
             name: string;
+            /** @description "INHABITANT", "ADOPTED", "WORKMATE" */
+            petStatus?: string;
             sex: string;
             species: string;
             subscriptionExpiry?: string;
@@ -3501,23 +4575,73 @@ export interface components {
             subscriptionStatus: string;
         };
         "internal_handlers.OwnerProcedureItem": {
+            /** @description true => self-reported, deletable */
+            addedByOwner?: boolean;
+            /** @description tp=10x/20x — anamnesis. tp=1/2 — also surfaced if set. */
+            anamnesis?: string;
+            /** @description resolved clinic name via `sk` -> memberlogin_members.company_name */
+            clinicName?: string;
             comment: string;
             date?: string;
             diagnosis: string;
+            /** @description populated only for tp=11 records */
+            ectoItems?: components["schemas"]["internal_handlers.OwnerEctoItem"][];
             id: string;
             nextDate?: string;
             notes: string;
+            /** @description tp=1 — vaccine brand. tp=12 — dewormer drug. */
+            preparat?: string;
+            /** @description dani column — prescription / დანიშნულება. Shown on every category. */
+            prescription?: string;
             procedureName: string;
             procedureType: string;
+            /** @description tp=1 — batch / serial number */
+            serial?: string;
+            /** @description populated only for tp=2/22/222 records */
+            testResults?: components["schemas"]["internal_handlers.OwnerTestResult"][];
+            /** @description tp=10x/20x — treatment / medications administered */
+            treatment?: string;
             vaccinations: string[];
+            /** @description tp=1 — vaccine type ("კომპლექსური ვაქცინა") */
+            vaccineType?: string;
+            /** @description resolved "First Last" via JOIN */
+            vetFullName?: string;
+            /** @description raw column value (id or free-text) */
             vetName: string;
+        };
+        "internal_handlers.OwnerTestResult": {
+            /** @description human-readable test name (Georgian) */
+            label: string;
+            /** @description typically "დადებითი" / "უარყოფითი" but can be free text */
+            result: string;
         };
         "internal_handlers.OwnerVisit": {
             date: string;
             id: number;
             operation: string;
+            /**
+             * @description PetID / PetName identify which animal the visit is for — an owner
+             *     with several pets cannot otherwise tell them apart.
+             */
+            petId?: string;
+            petName?: string;
             status: string;
             time: string;
+            /**
+             * @description Upcoming is true when the visit is today or later, so the client
+             *     doesn't have to re-implement date comparison against the server's
+             *     notion of "today".
+             */
+            upcoming?: boolean;
+            /**
+             * @description VetFullName is the resolved human name, empty when the
+             *     appointment has no vet assigned yet.
+             */
+            vetFullName?: string;
+            /**
+             * @description VetName is the raw `vetname` value (a member ID). Kept for
+             *     backwards compatibility; clients should display VetFullName.
+             */
             vetName: string;
         };
         "internal_handlers.OwnerWithPets": {
@@ -3551,9 +4675,7 @@ export interface components {
             date: string;
             id: number;
             method: string;
-            owner: string;
             uuid: string;
-            vet_id: string;
         };
         "internal_handlers.PaymentTier": {
             count: number;
@@ -3563,9 +4685,11 @@ export interface components {
             birth?: string;
             birth2?: string;
             breed: string;
+            cast?: string;
             castDate?: string;
             castrated: boolean;
             chip: string;
+            chipDate?: string;
             code: string;
             color: string;
             date?: string;
@@ -3600,20 +4724,69 @@ export interface components {
             name: string;
             price: string;
         };
+        "internal_handlers.ProcedureCategoryCount": {
+            count?: number;
+            name?: string;
+            tp?: number;
+        };
         "internal_handlers.ProcedureCount": {
             count: number;
             name: string;
             type: string;
         };
+        "internal_handlers.ProcedureFileResponse": {
+            contentType?: string;
+            createdAt?: string;
+            fileName: string;
+            id: number;
+            sizeBytes?: number;
+        };
+        "internal_handlers.ProcedureForm": {
+            fields: components["schemas"]["internal_handlers.FormField"][];
+            name: string;
+            /** @description dog | cat | other; empty = any */
+            species?: string;
+            tp: number;
+        };
         "internal_handlers.ProcedureTypeItem": {
             name: string;
             tp: number;
         };
+        "internal_handlers.ProcedureTypeRevenue": {
+            count?: number;
+            total?: string;
+            tp?: number;
+            tpname?: string;
+        };
+        "internal_handlers.PublicPetInfo": {
+            birth?: string;
+            breed?: string;
+            castrated?: boolean;
+            chip?: string;
+            color?: string;
+            id?: string;
+            name?: string;
+            sex?: string;
+            species?: string;
+        };
+        "internal_handlers.PublicPetResponse": {
+            categories?: components["schemas"]["internal_handlers.ProcedureCategoryCount"][];
+            pet?: components["schemas"]["internal_handlers.PublicPetInfo"];
+        };
+        "internal_handlers.PublicProcedureItem": {
+            date?: string;
+            diagnosis?: string;
+            id?: string;
+            name?: string;
+            nextDate?: string;
+            notes?: string;
+            vetName?: string;
+        };
         "internal_handlers.RecordPaymentRequest": {
             /** @description Amount in GEL */
             amount: string;
-            /** @description Payment date */
-            date: string;
+            /** @description Payment date; defaults to today */
+            date?: string;
             /**
              * @description card or cash
              * @enum {string}
@@ -3621,7 +4794,7 @@ export interface components {
             method: "card" | "cash";
             /** @description Owner personal ID */
             owner?: string;
-            /** @description Procedure IDs to mark as paid */
+            /** @description Procedures to mark paid; empty = all of the pet's unpaid items that day */
             procedure_ids?: number[];
             /** @description Pet ID */
             uuid: string;
@@ -3638,11 +4811,26 @@ export interface components {
             phone?: string;
             zip?: string;
         };
+        "internal_handlers.ReminderPreview": {
+            date: string;
+            kinds: {
+                [key: string]: number;
+            };
+            /** @description kinds already sent today */
+            sent_today: {
+                [key: string]: number;
+            };
+            texts: {
+                [key: string]: string;
+            };
+        };
         "internal_handlers.ReminderResult": {
             birthdays_sent: number;
             errors: number;
             expired_sent: number;
             procedures_sent: number;
+            /** @description kinds already sent today */
+            skipped: string[];
         };
         "internal_handlers.SelectOption": {
             label: string;
@@ -3653,11 +4841,12 @@ export interface components {
             sex: string;
         };
         "internal_handlers.ShopResponse": {
+            comment?: string;
             date: string;
             id: number;
+            method?: string;
             name: string;
             price: string;
-            vetname: string;
         };
         "internal_handlers.SpeciesCount": {
             count: number;
@@ -3671,18 +4860,42 @@ export interface components {
             phone: string;
             status: string;
         };
-        "internal_handlers.TimeSlot": {
-            available: boolean;
-            time: string;
+        "internal_handlers.UpdateMeRequest": {
+            address?: string;
+            city?: string;
+            country_id?: number;
+            first_name?: string;
+            phone?: string;
+        };
+        "internal_handlers.UpdatePetRequest": {
+            cast?: string;
+            castdate?: string;
+            chip?: string;
+            chipd?: string;
+            color?: string;
+            date?: string;
+            email?: string;
+            first_name?: string;
+            name?: string;
+            pet?: string;
+            phone?: string;
+            sex?: string;
+            uuid?: string;
+            variety?: string;
         };
         "internal_handlers.UserResponse": {
+            address?: string;
+            city?: string;
             company_name: string;
+            country_id?: number;
             email: string;
+            email_verified?: boolean;
             first_name: string;
             group_id: number;
             id: number;
             last_name: string;
             phone: string;
+            phone_verified?: boolean;
             status: string;
             zip: string;
         };
@@ -3694,47 +4907,134 @@ export interface components {
             brands: components["schemas"]["internal_handlers.SelectOption"][];
             vaccines: components["schemas"]["internal_handlers.SelectOption"][];
         };
+        "internal_handlers.YearlyClinicStats": {
+            monthlyBreakdown?: components["schemas"]["internal_handlers.MonthlyTotal"][];
+            procedures?: components["schemas"]["internal_handlers.ProcedureTypeRevenue"][];
+            total?: string;
+            year?: string;
+        };
+        "vetapp-backend_internal_models.Pet": {
+            /** @description Birthday MM-DD (greeting SMS) */
+            birth?: string;
+            /** @description Subscription expiry */
+            birth2?: string;
+            /** @description Neutering type */
+            cast?: string;
+            /** @description Neutering date */
+            castdate?: string;
+            /** @description Microchip number */
+            chip?: string;
+            /** @description Microchip implant date */
+            chipd?: string;
+            /** @description 4-digit access code */
+            code?: string;
+            color?: string;
+            /** @description DOB as string (YYYY-MM-DD) */
+            date?: string;
+            /** @description Owner email (denormalized) */
+            email?: string;
+            /** @description Owner name (denormalized) */
+            first_name?: string;
+            id?: number;
+            /** @description Pet name */
+            name?: string;
+            /** @description Species: ძაღლი, კატა, სხვა */
+            pet?: string;
+            /** @description INHABITANT, ADOPTED, WORKMATE */
+            petStatus?: string;
+            /** @description Owner phone (denormalized) */
+            phone?: string;
+            sex?: string;
+            /** @description 1=active, 2+=inactive */
+            status?: number;
+            /** @description Owner personal ID (FK to user.last_name) */
+            uuid?: string;
+            /** @description Breed */
+            variety?: string;
+            /** @description Clinic zip code */
+            vet?: string;
+        };
         "vetapp-backend_internal_models.Procedure": {
+            /**
+             * @description Denormalized identity / housekeeping columns the legacy table also
+             *     stores. Mostly redundant with Pet but the PHP forms set them on
+             *     every save and some queries depend on them.
+             */
+            address?: string;
             /** @description Anamnesis */
             anam?: string;
-            /** @description Comment (visible to owner) */
+            /** @description Comment visible to owner */
             coment?: string;
+            /** @description payment method label e.g. "ბარათი", "ნაღდი" */
+            company?: string;
             /** @description Prescription */
             dani?: string;
             /** @description Procedure date */
             date?: string;
             /** @description Next due date */
             date2?: string;
-            /** @description Reminder date */
+            /** @description date2 in JS-month encoding for the PHP calendar; see handlers.legacyDate3 */
             date3?: string;
+            /** @description Dehel drug-from-list (tp=12) OR Canine Babesia result (tp=2) */
+            deh?: string;
             /** @description Diagnosis */
             diagn?: string;
             id?: number;
-            /** @description Vet notes (internal) */
+            /** @description Vet-internal notes */
             koment?: string;
+            /** @description edit-log message column (NOT the pet name — that's PName) */
+            name?: string;
             /** @description Treatment */
             nout?: string;
             /** @description Owner personal ID */
             owner?: string;
             /** @description Owner name (denormalized) */
             ownern?: string;
+            /** @description pet species denormalized (ძაღლი / კატა / სხვა) */
+            pet?: string;
             /** @description Payment status: "0"=unpaid, "1"=paid */
             phone?: string;
+            /** @description owner personal-id copy */
+            pn?: string;
             /** @description Pet name (denormalized) */
             pname?: string;
             /** @description Price in GEL */
             price?: string;
+            /** @description pet sex denormalized */
+            sax?: string;
+            /** @description Vaccine serial / batch number */
+            ser?: string;
             /** @description Clinic zip */
             sk?: string;
+            /**
+             * @description Extra test-result columns specific to dog tests (tp=2). PHP form
+             *     at vet/addtest.php uses these for the Caniv 4DX panel + CDV/CAV
+             *     test slots. Other tps leave them empty.
+             */
+            test1?: string;
+            test2?: string;
+            test3?: string;
+            test4?: string;
+            test5?: string;
+            test6?: string;
+            test7?: string;
+            test8?: string;
             /** @description Procedure type code */
             tp?: number;
-            /** @description Procedure type name */
+            /** @description Procedure type display name */
             tpname?: string;
             /** @description Pet ID (as string) */
             uuid?: string;
-            /** @description Vaccine/procedure name */
+            /** @description Vaccine/procedure name OR tp=11 drops-custom OR tp=12 custom drug */
             vac?: string;
-            /** @description Test result fields */
+            /**
+             * @description Polymorphic content slots. For tp=11 (ecto): drops/pills/collar/
+             *     spray with custom-text in Vac/Vac2/Vac4/Vac6 and dropdown choice
+             *     in Vac1/Vac3/Vac5/Vac7. For tp=2/22/222: test panel results. For
+             *     tp=10x/20x (generic): Vac1=anamnesis, Vac2=diagnosis, Vac3=treatment.
+             *     Vac8/Vac9 are unused in production data (empty in all rows we've
+             *     inspected) but kept here for legacy compatibility.
+             */
             vac1?: string;
             vac2?: string;
             vac3?: string;
@@ -3744,9 +5044,9 @@ export interface components {
             vac7?: string;
             vac8?: string;
             vac9?: string;
-            /** @description Brand */
+            /** @description Brand OR tp=2 Leishmania result */
             vacn?: string;
-            /** @description Vet member ID */
+            /** @description Vet member ID (numeric string) — empty/0 means owner-added */
             vetname?: string;
         };
     };

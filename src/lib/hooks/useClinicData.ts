@@ -1,5 +1,6 @@
 import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import { getStoredSession } from "@/lib/utils/session";
+import { apiRequest, qs } from "@/lib/api/request";
 import type {
   PaginatedResponse,
   PetListItem,
@@ -16,32 +17,30 @@ function getToken(): string {
   return getStoredSession()?.accessToken ?? "";
 }
 
-async function fetchJson<T>(url: string): Promise<T> {
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  return res.json();
-}
+const fetchJson = <T,>(path: string) => apiRequest<T>("GET", path);
 
 export function usePets(page: number, pageSize: number, search: string) {
   const token = getToken();
   return useQuery<PaginatedResponse<PetListItem>>({
     queryKey: ["clinic-pets", page, pageSize, search],
     queryFn: () =>
-      fetchJson(
-        `/api/clinic/pets?token=${encodeURIComponent(token)}&page=${page}&pageSize=${pageSize}&search=${encodeURIComponent(search)}`,
-      ),
+      fetchJson(`/pets${qs({ page, pageSize, search })}`),
     enabled: !!token,
     staleTime: 5 * 60 * 1000,
     placeholderData: keepPreviousData,
   });
 }
 
-export function usePetDetail(petId: string | null) {
+/**
+ * ownerProof: the owner's personal ID the pet was found by. It lets a
+ * clinic open a pet registered elsewhere (see canAccessPet in the backend).
+ */
+export function usePetDetail(petId: string | null, ownerProof?: string) {
   const token = getToken();
   return useQuery<Pet>({
     queryKey: ["clinic-pet", petId],
     queryFn: () =>
-      fetchJson(`/api/clinic/pets/${petId}?token=${encodeURIComponent(token)}`),
+      fetchJson(`/pets/${petId}${qs({ owner_id: ownerProof })}`),
     enabled: !!token && !!petId,
     staleTime: 10 * 60 * 1000,
   });
@@ -52,9 +51,7 @@ export function useOwners(page: number, pageSize: number, search: string) {
   return useQuery<PaginatedResponse<Owner>>({
     queryKey: ["clinic-owners", page, pageSize, search],
     queryFn: () =>
-      fetchJson(
-        `/api/clinic/owners?token=${encodeURIComponent(token)}&page=${page}&pageSize=${pageSize}&search=${encodeURIComponent(search)}`,
-      ),
+      fetchJson(`/owners${qs({ page, pageSize, search })}`),
     enabled: !!token,
     staleTime: 5 * 60 * 1000,
     placeholderData: keepPreviousData,
@@ -66,9 +63,7 @@ export function useOwnerDetail(personalId: string | null) {
   return useQuery<OwnerWithPets>({
     queryKey: ["clinic-owner", personalId],
     queryFn: () =>
-      fetchJson(
-        `/api/clinic/owners/${encodeURIComponent(personalId!)}?token=${encodeURIComponent(token)}`,
-      ),
+      fetchJson(`/owners/${encodeURIComponent(personalId!)}`),
     enabled: !!token && !!personalId,
     staleTime: 10 * 60 * 1000,
   });
@@ -79,7 +74,7 @@ export function useClinicStats() {
   return useQuery<ClinicStats>({
     queryKey: ["clinic-stats"],
     queryFn: () =>
-      fetchJson(`/api/clinic/stats?token=${encodeURIComponent(token)}`),
+      fetchJson(`/stats/clinic`),
     enabled: !!token,
     staleTime: 15 * 60 * 1000,
   });
@@ -87,16 +82,11 @@ export function useClinicStats() {
 
 export function useDailyClinicStats(date: string, clinic?: string) {
   const token = getToken();
-  const params = new URLSearchParams({
-    token: token,
-    date,
-  });
-  if (clinic) params.set("clinic", clinic);
 
   return useQuery<DailyClinicStats>({
     queryKey: ["clinic-daily-stats", date, clinic],
     queryFn: () =>
-      fetchJson(`/api/clinic/stats/daily?${params}`),
+      fetchJson(`/stats/clinic/daily${qs({ date, clinic })}`),
     enabled: !!token && !!date,
     staleTime: 15 * 60 * 1000,
     placeholderData: keepPreviousData,
@@ -105,16 +95,11 @@ export function useDailyClinicStats(date: string, clinic?: string) {
 
 export function useMonthlyClinicStats(month: string, clinic?: string) {
   const token = getToken();
-  const params = new URLSearchParams({
-    token: token,
-    month,
-  });
-  if (clinic) params.set("clinic", clinic);
 
   return useQuery<MonthlyClinicStats>({
     queryKey: ["clinic-monthly-stats", month, clinic],
     queryFn: () =>
-      fetchJson(`/api/clinic/stats/monthly?${params}`),
+      fetchJson(`/stats/clinic/monthly${qs({ month, clinic })}`),
     enabled: !!token && !!month,
     staleTime: 15 * 60 * 1000,
     placeholderData: keepPreviousData,
@@ -123,16 +108,11 @@ export function useMonthlyClinicStats(month: string, clinic?: string) {
 
 export function useYearlyClinicStats(year: string, clinic?: string) {
   const token = getToken();
-  const params = new URLSearchParams({
-    token: token,
-    year,
-  });
-  if (clinic) params.set("clinic", clinic);
 
   return useQuery<YearlyClinicStats>({
     queryKey: ["clinic-yearly-stats", year, clinic],
     queryFn: () =>
-      fetchJson(`/api/clinic/stats/yearly?${params}`),
+      fetchJson(`/stats/clinic/yearly${qs({ year, clinic })}`),
     enabled: !!token && !!year,
     staleTime: 15 * 60 * 1000,
     placeholderData: keepPreviousData,

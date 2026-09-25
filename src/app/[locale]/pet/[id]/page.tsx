@@ -1,5 +1,4 @@
 import { getTranslations } from "next-intl/server";
-import { notFound } from "next/navigation";
 import { localizeSpeciesValue, localizeSex } from "@/lib/utils/localize";
 import ProcedureCards from "./procedure-cards";
 
@@ -28,10 +27,11 @@ type PublicPetResponse = {
   categories: ProcedureCategoryCount[];
 };
 
-async function fetchPetProfile(id: string): Promise<PublicPetResponse | null> {
+async function fetchPetProfile(id: string, s: string): Promise<PublicPetResponse | null> {
+  if (!s) return null;
   try {
-    const res = await fetch(`${GO_API}/api/public/pets/${id}`, {
-      next: { revalidate: 60 },
+    const res = await fetch(`${GO_API}/api/public/pets/${encodeURIComponent(id)}?s=${encodeURIComponent(s)}`, {
+      cache: "no-store",
     });
     if (!res.ok) return null;
     return res.json();
@@ -40,13 +40,21 @@ async function fetchPetProfile(id: string): Promise<PublicPetResponse | null> {
   }
 }
 
+type ShareSearch = Promise<{ s?: string | string[] }>;
+
+function shareToken(sp: { s?: string | string[] }): string {
+  return typeof sp.s === "string" ? sp.s : "";
+}
+
 export async function generateMetadata({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string; locale: string }>;
+  searchParams: ShareSearch;
 }) {
   const { id, locale } = await params;
-  const data = await fetchPetProfile(id);
+  const data = await fetchPetProfile(id, shareToken(await searchParams));
   if (!data) {
     return { title: "VetApp" };
   }
@@ -62,15 +70,26 @@ export async function generateMetadata({
 
 export default async function PetProfilePage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string; locale: string }>;
+  searchParams: ShareSearch;
 }) {
   const { id, locale } = await params;
+  const s = shareToken(await searchParams);
   const t = await getTranslations("petProfile");
-  const data = await fetchPetProfile(id);
+  const data = await fetchPetProfile(id, s);
 
   if (!data) {
-    notFound();
+    // Missing, wrong or expired share token (or no such pet).
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-gradient-to-b from-white via-[#f4f9ff] to-[#eaf3fd] px-6">
+        <div className="max-w-sm rounded-2xl bg-white p-8 text-center shadow-[0_2px_12px_rgba(0,0,0,0.04)]">
+          <p className="text-xl font-bold text-primary">VetApp</p>
+          <p className="mt-4 text-sm text-foreground-muted">{t("linkInvalid")}</p>
+        </div>
+      </div>
+    );
   }
 
   const { pet, categories } = data;
@@ -137,6 +156,7 @@ export default async function PetProfilePage({
           ) : (
             <ProcedureCards
               petId={id}
+              shareToken={s}
               categories={categories}
               locale={locale}
             />

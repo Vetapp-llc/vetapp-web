@@ -27,10 +27,12 @@ type PublicPetResponse = {
   categories: ProcedureCategoryCount[];
 };
 
+// The API decides whether the link is valid (it may temporarily accept
+// links without a token from older app builds), so always ask it.
 async function fetchPetProfile(id: string, s: string): Promise<PublicPetResponse | null> {
-  if (!s) return null;
+  const query = s ? `?s=${encodeURIComponent(s)}` : "";
   try {
-    const res = await fetch(`${GO_API}/api/public/pets/${encodeURIComponent(id)}?s=${encodeURIComponent(s)}`, {
+    const res = await fetch(`${GO_API}/api/public/pets/${encodeURIComponent(id)}${query}`, {
       cache: "no-store",
     });
     if (!res.ok) return null;

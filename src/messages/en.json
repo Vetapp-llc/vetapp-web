@@ -294,7 +294,8 @@
     "pinInvalid": "Please enter a valid 6-digit PIN",
     "pinNotFound": "The PIN is wrong or has expired (PINs are valid for 1 hour).",
     "pinDescription": "Enter the 6-digit PIN code provided by the pet owner",
-    "linkInvalid": "This link is invalid or has expired. Ask the pet owner to show the QR code again or give you a new PIN."
+    "linkInvalid": "This link is invalid or has expired. Ask the pet owner to show the QR code again or give you a new PIN.",
+    "pinTooMany": "Too many attempts. Please wait a minute and try again."
   },
   "admin": {
     "title": "Admin Panel",

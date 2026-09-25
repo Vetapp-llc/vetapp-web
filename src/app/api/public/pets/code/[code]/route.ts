@@ -16,10 +16,9 @@ export async function GET(
     });
 
     if (!res.ok) {
-      return NextResponse.json(
-        { message: "Pet not found" },
-        { status: res.status },
-      );
+      // Pass the API's body through: a 429 carries retry_after.
+      const err = await res.json().catch(() => ({ message: "Pet not found" }));
+      return NextResponse.json(err, { status: res.status });
     }
 
     const data = await res.json();

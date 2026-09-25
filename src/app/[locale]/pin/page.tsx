@@ -59,7 +59,7 @@ export default function PinLookupPage() {
     try {
       const res = await fetch(`/api/public/pets/code/${code}`);
       if (!res.ok) {
-        setError(t("pinNotFound"));
+        setError(res.status === 429 ? t("pinTooMany") : t("pinNotFound"));
         setLoading(false);
         return;
       }

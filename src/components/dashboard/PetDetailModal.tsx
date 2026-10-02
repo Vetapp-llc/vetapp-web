@@ -108,17 +108,17 @@ export function PetDetailModal({ open, petId, ownerProof, onClose, onViewOwner }
                   {speciesEmoji(pet.species)}
                 </div>
                 <div className="min-w-0">
-                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                    <h2 className="text-xl font-bold text-primary-dark">{pet.name}</h2>
+                  <div className="flex items-center gap-2.5">
+                    <h2 className="min-w-0 text-xl font-bold leading-tight text-primary-dark">{pet.name}</h2>
                     <button
                       onClick={() => setEditOpen(true)}
                       aria-label={tf("editPet")}
-                      className="inline-flex items-center gap-1 rounded-lg border border-gray-200 bg-white px-2.5 py-1 text-[11px] font-bold text-primary-dark hover:bg-gray-50 transition-colors cursor-pointer"
+                      title={tf("editPet")}
+                      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-gray-200 bg-white text-primary-dark hover:bg-gray-50 transition-colors cursor-pointer"
                     >
-                      <svg className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                      <svg className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                         <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
                       </svg>
-                      {tf("editShort")}
                     </button>
                   </div>
                   <p className="text-sm text-foreground-muted/60">

@@ -5,8 +5,9 @@ import { useTranslations, useLocale } from "next-intl";
 import { useQueryClient } from "@tanstack/react-query";
 import { usePetDetail } from "@/lib/hooks/useClinicData";
 import { PetRecords } from "./pet/PetRecords";
-import { AllergiesPanel, CertificateModal, EditPetModal, PetAppointments } from "./pet/PetExtras";
-import { localizeSpeciesValue, localizeSex, speciesKey as speciesKeyOf } from "@/lib/utils/localize";
+import { AllergiesPanel, BookAppointmentModal, CertificateModal, EditPetModal, PetAppointments } from "./pet/PetExtras";
+import { localizeSpeciesValue, localizeSex, speciesEmoji, speciesKey as speciesKeyOf } from "@/lib/utils/localize";
+import { useBackClose } from "@/lib/hooks/useBackClose";
 import { VisitBuilder } from "./VisitBuilder";
 
 function formatDate(d: string | null | undefined): string {
@@ -69,6 +70,8 @@ export function PetDetailModal({ open, petId, ownerProof, onClose, onViewOwner }
   const [visitBuilderOpen, setVisitBuilderOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [certOpen, setCertOpen] = useState(false);
+  const [bookOpen, setBookOpen] = useState(false);
+  useBackClose(open, onClose);
 
   useEffect(() => {
     if (open) setTab("records");
@@ -99,51 +102,61 @@ export function PetDetailModal({ open, petId, ownerProof, onClose, onViewOwner }
           <div>
             {/* Pet Header */}
             <div className="bg-gradient-to-r from-primary/5 to-transparent px-6 pt-6 pb-5">
-              <div className="flex items-center gap-4">
-                <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-primary text-2xl">
-                  {pet.species.toLowerCase().includes("ძაღლ") || pet.species.toLowerCase() === "dog" ? "🐕" : pet.species.toLowerCase().includes("კატ") || pet.species.toLowerCase() === "cat" ? "🐈" : "🐾"}
+              {/* pr-10 keeps the name row clear of the close button */}
+              <div className="flex items-center gap-4 pr-10">
+                <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary text-2xl">
+                  {speciesEmoji(pet.species)}
                 </div>
-                <div>
-                  <h2 className="text-xl font-bold text-primary-dark">{pet.name}</h2>
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2.5">
+                    <h2 className="min-w-0 text-xl font-bold leading-tight text-primary-dark">{pet.name}</h2>
+                    <button
+                      onClick={() => setEditOpen(true)}
+                      aria-label={tf("editPet")}
+                      title={tf("editPet")}
+                      className="-m-1.5 flex shrink-0 items-center justify-center rounded-lg p-1.5 text-primary hover:text-primary/70 transition-colors cursor-pointer"
+                    >
+                      <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                        <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+                      </svg>
+                    </button>
+                  </div>
                   <p className="text-sm text-foreground-muted/60">
                     {localizeSpeciesValue(pet.species, locale)}
                     {pet.breed ? ` · ${pet.breed}` : ""}
                     {pet.sex ? ` · ${localizeSex(pet.sex, locale)}` : ""}
+                    {pet.birth ? ` · ${tf("birthShort")} ${formatDate(pet.birth)}` : ""}
                   </p>
                 </div>
               </div>
 
-              {/* New Visit button */}
-              <button
-                onClick={() => setVisitBuilderOpen(true)}
-                className="mt-3 inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-xs font-bold text-white hover:bg-primary/90 transition-colors cursor-pointer"
-              >
-                <svg className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
-                </svg>
-                {t("newVisit")}
-              </button>
-              <button
-                onClick={() => setEditOpen(true)}
-                className="mt-3 ml-2 inline-flex items-center rounded-xl border border-gray-200 bg-white px-4 py-2 text-xs font-bold text-primary-dark hover:bg-gray-50 transition-colors cursor-pointer"
-              >
-                {tf("editPet")}
-              </button>
-              <button
-                onClick={() => setCertOpen(true)}
-                className="mt-3 ml-2 inline-flex items-center rounded-xl border border-gray-200 bg-white px-4 py-2 text-xs font-bold text-primary-dark hover:bg-gray-50 transition-colors cursor-pointer"
-              >
-                {tf("certificate")}
-              </button>
+              {/* Actions */}
+              <div className="mt-3 flex flex-wrap gap-2">
+                <button
+                  onClick={() => setVisitBuilderOpen(true)}
+                  className="inline-flex items-center gap-1 rounded-xl bg-primary px-3 py-2 text-[11px] font-bold text-white hover:bg-primary/90 transition-colors cursor-pointer sm:gap-1.5 sm:px-4 sm:text-xs"
+                >
+                  <svg className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
+                  </svg>
+                  {tf("addProcedure")}
+                </button>
+                <button
+                  onClick={() => setBookOpen(true)}
+                  className="inline-flex items-center rounded-xl border border-primary/30 bg-white px-3 py-2 text-[11px] font-bold text-primary hover:bg-primary/5 transition-colors cursor-pointer sm:px-4 sm:text-xs"
+                >
+                  {tf("bookAppointment")}
+                </button>
+                <button
+                  onClick={() => setCertOpen(true)}
+                  className="inline-flex items-center rounded-xl border border-gray-200 bg-white px-3 py-2 text-[11px] font-bold text-primary-dark hover:bg-gray-50 transition-colors cursor-pointer sm:px-4 sm:text-xs"
+                >
+                  {tf("certificate")}
+                </button>
+              </div>
 
               {/* Pet info grid */}
               <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
-                {pet.birth && (
-                  <div className="rounded-xl bg-white/80 px-3 py-2">
-                    <p className="text-[10px] font-semibold uppercase tracking-wider text-foreground-muted/50">{t("birthDate")}</p>
-                    <p className="text-sm font-semibold text-primary-dark">{formatDate(pet.birth)}</p>
-                  </div>
-                )}
                 {pet.color && (
                   <div className="rounded-xl bg-white/80 px-3 py-2">
                     <p className="text-[10px] font-semibold uppercase tracking-wider text-foreground-muted/50">{t("color")}</p>
@@ -213,7 +226,7 @@ export function PetDetailModal({ open, petId, ownerProof, onClose, onViewOwner }
               </div>
               {tab === "records" && <PetRecords petId={String(pet.id ?? petId)} species={speciesKeyOf(pet.species)} />}
               {tab === "allergies" && <AllergiesPanel petId={String(pet.id ?? petId)} ownerId={pet.ownerPersonalId} />}
-              {tab === "appointments" && <PetAppointments petId={String(pet.id ?? petId)} petName={pet.name} ownerId={pet.ownerPersonalId} />}
+              {tab === "appointments" && <PetAppointments petId={String(pet.id ?? petId)} />}
             </div>
           </div>
         )}
@@ -245,6 +258,19 @@ export function PetDetailModal({ open, petId, ownerProof, onClose, onViewOwner }
               setEditOpen(false);
               queryClient.invalidateQueries({ queryKey: ["clinic-pet", petId] });
               queryClient.invalidateQueries({ queryKey: ["clinic-pets"] });
+            }}
+          />
+        )}
+        {bookOpen && pet && (
+          <BookAppointmentModal
+            petId={String(pet.id ?? petId)}
+            petName={pet.name}
+            ownerId={pet.ownerPersonalId}
+            onClose={() => setBookOpen(false)}
+            onBooked={() => {
+              setBookOpen(false);
+              queryClient.invalidateQueries({ queryKey: ["appointments"] });
+              setTab("appointments");
             }}
           />
         )}

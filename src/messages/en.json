@@ -125,7 +125,7 @@
     "colorPatternPlaceholder": "e.g. Black and white spotted",
     "petStatus": "Status",
     "statusDomestic": "Domestic",
-    "statusStray": "Stray",
+    "statusStray": "Street",
     "selectStatus": "Select status",
     "customSpeciesPlaceholder": "Enter species name",
     "required": "Required",
@@ -133,7 +133,9 @@
     "validationNameLetters": "Name must contain only letters and spaces",
     "validationPhoneDigits": "Phone must contain only digits",
     "validationChipDigits": "Chip number must contain only digits",
-    "validationEmailInvalid": "Invalid email format"
+    "validationEmailInvalid": "Invalid email format",
+    "statusAdopted": "Adopted",
+    "statusService": "Service"
   },
   "clinic": {
     "petsTab": "Pets",
@@ -441,7 +443,9 @@
     "confirmSend": "Send now?",
     "passwordHint8": "At least 8 characters",
     "otherProcedure": "Other (type the name)",
-    "operationName": "Operation / procedure name"
+    "operationName": "Operation / procedure name",
+    "addProcedure": "Add procedure",
+    "birthShort": "DOB"
   },
   "menu": {
     "shop": "Shop sales",

@@ -12,7 +12,8 @@ import {
 } from "@/lib/hooks/useProcedureData";
 import { getStoredSession } from "@/lib/utils/session";
 import { apiRequest, todayGeorgia } from "@/lib/api/request";
-import { localizeProcedureType, speciesKey } from "@/lib/utils/localize";
+import { localizeProcedureType, speciesEmoji, speciesKey } from "@/lib/utils/localize";
+import { useBackClose } from "@/lib/hooks/useBackClose";
 import type { PriceResponse } from "@/lib/types/api";
 import { ProcedureFieldInputs, missingFields as missingFor, withDependents } from "./ProcedureFieldInputs";
 
@@ -197,6 +198,10 @@ export function VisitBuilder({
   });
 
   const [step, setStep] = useState<Step>("build");
+  // Back closes the builder; on the payment step it first returns to the
+  // procedure list, like the step's own "back" link.
+  useBackClose(true, onClose);
+  useBackClose(step === "pay", () => setStep("build"));
   const [expandedCardId, setExpandedCardId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
@@ -435,7 +440,7 @@ export function VisitBuilder({
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-gradient-to-r from-primary/5 to-transparent shrink-0">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-lg">🩺</div>
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-lg">{speciesEmoji(species)}</div>
             <div>
               <h2 className="text-lg font-bold text-primary-dark">{petName}</h2>
               <p className="text-xs text-foreground-muted/60">{ownerName}</p>
@@ -726,10 +731,15 @@ function ProcedureCard({ proc, form, expanded, onToggle, onPrice, onValue, onRem
   return (
     <div className={`rounded-xl border bg-white ${missing.length || badPrice ? "border-red-200" : "border-gray-100"}`}>
       <div className="flex items-center gap-3 px-4 py-3">
-        <button onClick={onToggle} className="flex-1 min-w-0 text-left cursor-pointer">
+        <button onClick={onToggle} aria-expanded={expanded} className="flex flex-1 min-w-0 items-center gap-2 text-left cursor-pointer">
+          <svg className={`h-4 w-4 shrink-0 text-foreground-muted/60 transition-transform ${expanded ? "rotate-90" : ""}`} viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+            <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
+          </svg>
+          <span className="min-w-0">
           <span className="text-sm font-semibold text-primary-dark">{localizeProcedureType(proc.tpname, locale)}</span>
           {proc.values.vac && <span className="ml-2 text-xs text-foreground-muted/60">{proc.values.vac}</span>}
           {missing.length > 0 && <span className="ml-2 text-xs text-red-600">{t("requiredMissing")}</span>}
+          </span>
         </button>
         <div className="flex items-center gap-1">
           <input

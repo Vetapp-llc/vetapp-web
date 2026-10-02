@@ -114,9 +114,9 @@ export function PetDetailModal({ open, petId, ownerProof, onClose, onViewOwner }
                       onClick={() => setEditOpen(true)}
                       aria-label={tf("editPet")}
                       title={tf("editPet")}
-                      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-gray-200 bg-white text-primary-dark hover:bg-gray-50 transition-colors cursor-pointer"
+                      className="-m-1.5 flex shrink-0 items-center justify-center rounded-lg p-1.5 text-primary hover:text-primary/70 transition-colors cursor-pointer"
                     >
-                      <svg className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                      <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                         <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
                       </svg>
                     </button>

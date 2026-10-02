@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { useBackClose } from "@/lib/hooks/useBackClose";
 import { useTranslations, useLocale } from "next-intl";
 import { useOwnerDetail } from "@/lib/hooks/useClinicData";
 import { localizeSpeciesValue, localizeSex } from "@/lib/utils/localize";
@@ -20,6 +21,7 @@ export function OwnerDetailModal({ open, personalId, onClose, onViewPet }: Owner
   const t = useTranslations("clinic");
   const locale = useLocale();
   const { data: owner, isLoading } = useOwnerDetail(open ? personalId : null);
+  useBackClose(open, onClose);
 
   useEffect(() => {
     if (open) document.body.style.overflow = "hidden";

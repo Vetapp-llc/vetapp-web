@@ -118,3 +118,11 @@ export function speciesKey(value: string): "dog" | "cat" | "other" {
   if (v === "კატა" || v === "cat") return "cat";
   return "other";
 }
+
+/** Emoji for a pet's species, however the legacy data spelled it. */
+export function speciesEmoji(species: string | null | undefined): string {
+  const v = (species ?? "").trim().toLowerCase();
+  if (v.includes("ძაღლ") || v === "dog" || v.includes("собак")) return "🐕";
+  if (v.includes("კატ") || v === "cat" || v.includes("кош") || v === "кот") return "🐈";
+  return "🐾";
+}

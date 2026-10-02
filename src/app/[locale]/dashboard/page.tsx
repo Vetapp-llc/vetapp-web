@@ -12,6 +12,7 @@ import { Pagination } from "@/components/dashboard/Pagination";
 import { PetDetailModal } from "@/components/dashboard/PetDetailModal";
 import { OwnerDetailModal } from "@/components/dashboard/OwnerDetailModal";
 import { useDashboardView } from "@/lib/context/DashboardViewContext";
+import { useBackClose } from "@/lib/hooks/useBackClose";
 import type { ViewId } from "@/lib/context/DashboardViewContext";
 import breedsData from "@/lib/data/breeds.json";
 import { ShopView, PricesView, StaffView, AppointmentsView, PromoView, AccountView } from "@/components/dashboard/views/ClinicViews";
@@ -518,6 +519,7 @@ function BreedCombobox({ species, value, onChange, locale, className, required, 
    ═══════════════════════════════════════════════════════ */
 function AddOwnerPetModal({ open, onClose, onCreated, prefillId }: { open: boolean; onClose: () => void; onCreated: (petId: string) => void; prefillId?: string }) {
   const t = useTranslations("dashboard");
+  useBackClose(open, onClose);
   const locale = useLocale();
 
   const [uuid, setUuid] = useState(prefillId || "");
@@ -780,7 +782,9 @@ function AddOwnerPetModal({ open, onClose, onCreated, prefillId }: { open: boole
                 <select value={petStatus} onChange={(e) => { setPetStatus(e.target.value); markTouched("petStatus"); }} onBlur={() => markTouched("petStatus")} className={sc("petStatus")}>
                   <option value="">{t("selectStatus")}</option>
                   <option value="INHABITANT">{t("statusDomestic")}</option>
+                  <option value="ADOPTED">{t("statusAdopted")}</option>
                   <option value="STREET">{t("statusStray")}</option>
+                  <option value="WORKMATE">{t("statusService")}</option>
                 </select>
                 {fieldErr("petStatus")}
               </div>

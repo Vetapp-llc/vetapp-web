@@ -125,7 +125,7 @@
     "colorPatternPlaceholder": "напр. чёрно-белый пятнистый",
     "petStatus": "Статус",
     "statusDomestic": "Домашний",
-    "statusStray": "Бездомный",
+    "statusStray": "Уличный",
     "selectStatus": "Выберите статус",
     "customSpeciesPlaceholder": "Введите название вида",
     "required": "Обязательное поле",
@@ -133,7 +133,9 @@
     "validationNameLetters": "Имя может содержать только буквы и пробелы",
     "validationPhoneDigits": "Телефон может содержать только цифры",
     "validationChipDigits": "Номер чипа может содержать только цифры",
-    "validationEmailInvalid": "Неверный формат эл. почты"
+    "validationEmailInvalid": "Неверный формат эл. почты",
+    "statusAdopted": "Пристроенный",
+    "statusService": "Служебный"
   },
   "clinic": {
     "petsTab": "Питомцы",
@@ -441,7 +443,10 @@
     "confirmSend": "Отправить?",
     "passwordHint8": "Минимум 8 символов",
     "otherProcedure": "Другое (введите название)",
-    "operationName": "Название операции / процедуры"
+    "operationName": "Название операции / процедуры",
+    "addProcedure": "Добавить процедуру",
+    "editShort": "Изменить",
+    "birthShort": "Д.р."
   },
   "menu": {
     "shop": "Продажи",

@@ -125,7 +125,7 @@
     "colorPatternPlaceholder": "მაგ. შავ-თეთრი ლაქიანი",
     "petStatus": "სტატუსი",
     "statusDomestic": "შინაური",
-    "statusStray": "მიკელდებული",
+    "statusStray": "ქუჩის",
     "selectStatus": "აირჩიეთ სტატუსი",
     "customSpeciesPlaceholder": "შეიყვანეთ სახეობის სახელი",
     "required": "სავალდებულო",
@@ -133,7 +133,9 @@
     "validationNameLetters": "სახელი უნდა შეიცავდეს მხოლოდ ასოებს და სივრცეებს",
     "validationPhoneDigits": "ტელეფონი უნდა შეიცავდეს მხოლოდ ციფრებს",
     "validationChipDigits": "ჩიპის ნომერი უნდა შეიცავდეს მხოლოდ ციფრებს",
-    "validationEmailInvalid": "ელ-ფოსტის ფორმატი არასწორია"
+    "validationEmailInvalid": "ელ-ფოსტის ფორმატი არასწორია",
+    "statusAdopted": "მიკედლებული",
+    "statusService": "სასამსახურო"
   },
   "clinic": {
     "petsTab": "ცხოველები",
@@ -441,7 +443,10 @@
     "confirmSend": "გავგზავნო?",
     "passwordHint8": "მინიმუმ 8 სიმბოლო",
     "otherProcedure": "სხვა (ჩაწერეთ დასახელება)",
-    "operationName": "ოპერაციის / პროცედურის დასახელება"
+    "operationName": "ოპერაციის / პროცედურის დასახელება",
+    "addProcedure": "პროცედურის დამატება",
+    "editShort": "რედაქტირება",
+    "birthShort": "დ.თ"
   },
   "menu": {
     "shop": "მაღაზია",

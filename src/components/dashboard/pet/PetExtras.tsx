@@ -399,11 +399,10 @@ export function BookAppointmentModal({
   );
 }
 
-export function PetAppointments({ petId, petName, ownerId }: { petId: string; petName: string; ownerId?: string }) {
+export function PetAppointments({ petId }: { petId: string }) {
   const t = useTranslations("features");
   const qc = useQueryClient();
   const { data, isLoading } = useAppointments(todayGeorgia(), "", petId);
-  const [booking, setBooking] = useState(false);
   const refresh = () => qc.invalidateQueries({ queryKey: ["appointments"] });
   const [err, setErr] = useState<string | null>(null);
   const cancel = async (id: number) => {
@@ -419,7 +418,6 @@ export function PetAppointments({ petId, petName, ownerId }: { petId: string; pe
   return (
     <div className="space-y-3">
       {err && <Notice>{err}</Notice>}
-      <div className="flex justify-end"><Button small onClick={() => setBooking(true)}>{t("bookAppointment")}</Button></div>
       {isLoading ? (
         <p className="text-sm">{t("loading")}</p>
       ) : !data || data.data.length === 0 ? (
@@ -434,7 +432,6 @@ export function PetAppointments({ petId, petName, ownerId }: { petId: string; pe
           ))}
         </ul>
       )}
-      {booking && <BookAppointmentModal petId={petId} petName={petName} ownerId={ownerId} onClose={() => setBooking(false)} onBooked={() => { setBooking(false); refresh(); }} />}
     </div>
   );
 }

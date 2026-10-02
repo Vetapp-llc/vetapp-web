@@ -4,6 +4,7 @@
 // existing visual language (rounded-xl, primary / primary-dark palette).
 
 import { useEffect, useState, type ReactNode } from "react";
+import { useBackClose } from "@/lib/hooks/useBackClose";
 
 export const inputClass =
   "mt-1 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary disabled:bg-gray-50";
@@ -102,6 +103,7 @@ export function Modal({
   wide?: boolean;
   zIndex?: string;
 }) {
+  useBackClose(open, onClose);
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();

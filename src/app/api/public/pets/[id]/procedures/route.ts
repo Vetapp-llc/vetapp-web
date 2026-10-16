@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { forwardedFor, shareQuery } from "@/lib/api/public";
 
 const GO_API = process.env.NEXT_PUBLIC_API_URL!;
 
@@ -8,11 +9,12 @@ export async function GET(
 ) {
   const { id } = await params;
   const tp = request.nextUrl.searchParams.get("tp");
-  const query = tp ? `?tp=${tp}` : "";
+  const query = shareQuery(request, tp ? { tp } : {});
 
   try {
     const res = await fetch(`${GO_API}/api/public/pets/${id}/procedures${query}`, {
-      next: { revalidate: 60 },
+      cache: "no-store",
+      headers: forwardedFor(request),
     });
 
     if (!res.ok) {
@@ -24,7 +26,8 @@ export async function GET(
 
     const data = await res.json();
     return NextResponse.json(data, {
-      headers: { "Cache-Control": "public, max-age=60, s-maxage=300" },
+      // Medical data behind a share token: never cache it on the CDN.
+      headers: { "Cache-Control": "private, no-store" },
     });
   } catch (error) {
     console.error("Public pet procedures error:", error);

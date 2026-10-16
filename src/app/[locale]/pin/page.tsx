@@ -4,11 +4,14 @@ import { useState, useRef } from "react";
 import { useTranslations } from "next-intl";
 import { useRouter, useParams } from "next/navigation";
 
+// Share PINs from the owner app are 6 digits and live one hour.
+const PIN_LENGTH = 6;
+
 export default function PinLookupPage() {
   const t = useTranslations("petProfile");
   const router = useRouter();
   const { locale } = useParams<{ locale: string }>();
-  const [digits, setDigits] = useState(["", "", "", ""]);
+  const [digits, setDigits] = useState(Array<string>(PIN_LENGTH).fill(""));
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const inputs = useRef<(HTMLInputElement | null)[]>([]);
@@ -20,7 +23,7 @@ export default function PinLookupPage() {
     setDigits(next);
     setError("");
 
-    if (value && index < 3) {
+    if (value && index < PIN_LENGTH - 1) {
       inputs.current[index + 1]?.focus();
     }
   };
@@ -36,16 +39,16 @@ export default function PinLookupPage() {
 
   const handlePaste = (e: React.ClipboardEvent) => {
     e.preventDefault();
-    const text = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, 4);
-    if (text.length === 4) {
+    const text = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, PIN_LENGTH);
+    if (text.length === PIN_LENGTH) {
       setDigits(text.split(""));
-      inputs.current[3]?.focus();
+      inputs.current[PIN_LENGTH - 1]?.focus();
     }
   };
 
   const handleSubmit = async () => {
     const code = digits.join("");
-    if (code.length !== 4) {
+    if (code.length !== PIN_LENGTH) {
       setError(t("pinInvalid"));
       return;
     }
@@ -56,12 +59,12 @@ export default function PinLookupPage() {
     try {
       const res = await fetch(`/api/public/pets/code/${code}`);
       if (!res.ok) {
-        setError(t("pinNotFound"));
+        setError(res.status === 429 ? t("pinTooMany") : t("pinNotFound"));
         setLoading(false);
         return;
       }
       const data = await res.json();
-      router.push(`/${locale}/pet/${data.pet.id}`);
+      router.push(`/${locale}/pet/${data.pet.id}?s=${encodeURIComponent(data.share_token)}`);
     } catch {
       setError(t("pinNotFound"));
       setLoading(false);
@@ -96,8 +99,8 @@ export default function PinLookupPage() {
             {t("pinDescription")}
           </p>
 
-          {/* 4-digit input */}
-          <div className="mb-6 flex justify-center gap-3" onPaste={handlePaste}>
+          {/* PIN input */}
+          <div className="mb-6 flex justify-center gap-1.5 sm:gap-3" onPaste={handlePaste}>
             {digits.map((d, i) => (
               <input
                 key={i}
@@ -108,7 +111,7 @@ export default function PinLookupPage() {
                 value={d}
                 onChange={(e) => handleChange(i, e.target.value)}
                 onKeyDown={(e) => handleKeyDown(i, e)}
-                className="h-14 w-14 rounded-xl border-2 border-surface bg-[#f8fbfe] text-center text-2xl font-bold text-primary-dark outline-none transition-colors focus:border-primary focus:bg-white"
+                className="h-12 w-9 rounded-xl border-2 sm:h-14 sm:w-14 border-surface bg-[#f8fbfe] text-center text-2xl font-bold text-primary-dark outline-none transition-colors focus:border-primary focus:bg-white"
                 autoFocus={i === 0}
               />
             ))}

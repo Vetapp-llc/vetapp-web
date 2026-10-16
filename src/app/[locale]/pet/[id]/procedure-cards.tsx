@@ -64,10 +64,12 @@ const CATEGORY_NAME_EN: Record<number, string> = {
 
 export default function ProcedureCards({
   petId,
+  shareToken,
   categories,
   locale,
 }: {
   petId: string;
+  shareToken: string;
   categories: ProcedureCategoryCount[];
   locale: string;
 }) {
@@ -85,7 +87,9 @@ export default function ProcedureCards({
     setExpandedTp(tp);
     setLoading(true);
     try {
-      const res = await fetch(`/api/public/pets/${petId}/procedures?tp=${tp}`);
+      const res = await fetch(
+        `/api/public/pets/${petId}/procedures?tp=${tp}&s=${encodeURIComponent(shareToken)}`,
+      );
       if (res.ok) {
         const data = await res.json();
         setProcedures(data);

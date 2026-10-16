@@ -1242,7 +1242,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Generate pet access code */
+        /** Generate pet share PIN */
         get: {
             parameters: {
                 query?: never;
@@ -1896,6 +1896,63 @@ export interface paths {
                 };
             };
         };
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/owner/pets/{id}/share-link": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get pet share-link token */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Pet ID */
+                    id: number;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handlers.ShareTokenResponse"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handlers.ErrorResponse"];
+                    };
+                };
+                /** @description Internal Server Error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handlers.ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -3281,7 +3338,7 @@ export interface paths {
                 query?: never;
                 header?: never;
                 path: {
-                    /** @description 4-digit access code */
+                    /** @description 6-digit share PIN */
                     code: string;
                 };
                 cookie?: never;
@@ -3326,7 +3383,10 @@ export interface paths {
         /** Get public pet profile */
         get: {
             parameters: {
-                query?: never;
+                query: {
+                    /** @description Share token (QR link token or PIN) */
+                    s: string;
+                };
                 header?: never;
                 path: {
                     /** @description Pet ID */
@@ -3374,7 +3434,9 @@ export interface paths {
         /** Get public pet procedures */
         get: {
             parameters: {
-                query?: {
+                query: {
+                    /** @description Share token (QR link token or PIN) */
+                    s: string;
                     /** @description Procedure type */
                     tp?: number;
                 };
@@ -3966,7 +4028,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["internal_handlers.MessageResponse"];
+                        "application/json": components["schemas"]["internal_handlers.AppleVerifyResponse"];
                     };
                 };
                 /** @description Bad Request */
@@ -3980,6 +4042,15 @@ export interface paths {
                 };
                 /** @description Not Found */
                 404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_handlers.ErrorResponse"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -4176,12 +4247,52 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/subscriptions/return": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Card payment return page */
+        get: {
+            parameters: {
+                query?: {
+                    /** @description success or fail (BOG) */
+                    status?: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description HTML page */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/html": string;
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
         "internal_handlers.AccessCodeResponse": {
             code: string;
+            expires_at: string;
         };
         "internal_handlers.AdminStats": {
             active_accounts: number;
@@ -4204,10 +4315,19 @@ export interface components {
             uuid: string;
         };
         "internal_handlers.AppleVerifyRequest": {
-            package_id: number;
+            /**
+             * @description PackageID is optional: the package is found from the receipt's
+             *     productId, so a purchase StoreKit re-delivers after a restart can
+             *     be verified without knowing what the user had selected.
+             */
+            package_id?: number;
             pet_id: number;
             /** @description StoreKit 2 JWS signed transaction */
             signed_transaction: string;
+        };
+        "internal_handlers.AppleVerifyResponse": {
+            already_processed?: boolean;
+            message: string;
         };
         "internal_handlers.BreedCount": {
             breed: string;
@@ -4226,13 +4346,41 @@ export interface components {
             personal_id: string;
             phone: string;
         };
+        "internal_handlers.CertificatePet": {
+            cast: string;
+            castdate: string;
+            chip: string;
+            chipd: string;
+            color: string;
+            date: string;
+            id: number;
+            name: string;
+            pet: string;
+            sex: string;
+            variety: string;
+        };
         "internal_handlers.CertificateResponse": {
-            complex?: components["schemas"]["vetapp-backend_internal_models.Procedure"];
-            dehelminization?: components["schemas"]["vetapp-backend_internal_models.Procedure"];
-            ectoparasite?: components["schemas"]["vetapp-backend_internal_models.Procedure"];
+            complex?: components["schemas"]["internal_handlers.CertificateTreatment"];
+            dehelminization?: components["schemas"]["internal_handlers.CertificateTreatment"];
+            ectoparasite?: components["schemas"]["internal_handlers.CertificateTreatment"];
             owner: components["schemas"]["internal_handlers.CertificateOwner"];
-            pet: components["schemas"]["vetapp-backend_internal_models.Pet"];
-            rabies?: components["schemas"]["vetapp-backend_internal_models.Procedure"];
+            pet: components["schemas"]["internal_handlers.CertificatePet"];
+            rabies?: components["schemas"]["internal_handlers.CertificateTreatment"];
+        };
+        "internal_handlers.CertificateTreatment": {
+            date: string;
+            date2: string;
+            deh: string;
+            ser: string;
+            vac: string;
+            vac1: string;
+            vac2: string;
+            vac3: string;
+            vac4: string;
+            vac5: string;
+            vac6: string;
+            vac7: string;
+            vacn: string;
         };
         "internal_handlers.ChangePasswordRequest": {
             current_password: string;
@@ -4299,8 +4447,18 @@ export interface components {
             first_name?: string;
             name: string;
             pet?: string;
+            /**
+             * @description PetStatus is how the pet lives: INHABITANT (domestic), STREET,
+             *     ADOPTED or WORKMATE.
+             * @enum {string}
+             */
+            petStatus?: "INHABITANT" | "STREET" | "ADOPTED" | "WORKMATE";
             phone?: string;
             sex?: string;
+            /**
+             * @description Status is ignored: a clinic-registered pet always starts unregistered
+             *     (see Create). Kept so older clients still decode.
+             */
             status?: number;
             uuid: string;
             variety?: string;
@@ -4406,7 +4564,9 @@ export interface components {
             status: string;
         };
         "internal_handlers.ErrorResponse": {
+            code?: string;
             error: string;
+            retry_after?: number;
         };
         "internal_handlers.FormField": {
             column: string;
@@ -4478,6 +4638,11 @@ export interface components {
             records: number;
         };
         "internal_handlers.OTPSendRequest": {
+            /**
+             * @description Email (register only) lets the app learn the address is taken
+             *     before an SMS is paid for.
+             */
+            email?: string;
             phone: string;
             /** @enum {string} */
             type: "register" | "recovery";
@@ -4772,6 +4937,11 @@ export interface components {
         "internal_handlers.PublicPetResponse": {
             categories?: components["schemas"]["internal_handlers.ProcedureCategoryCount"][];
             pet?: components["schemas"]["internal_handlers.PublicPetInfo"];
+            /**
+             * @description ShareToken (PIN lookups only) is what the page passes as `s` to
+             *     load the history.
+             */
+            share_token?: string;
         };
         "internal_handlers.PublicProcedureItem": {
             date?: string;
@@ -4803,12 +4973,32 @@ export interface components {
             refresh_token: string;
         };
         "internal_handlers.RegisterRequest": {
+            code?: string;
             email: string;
+            /** @description FirstName is the full display name ("Given Surname"). */
             first_name: string;
+            /**
+             * @description GroupID and Zip are ignored: public sign-up always creates an owner.
+             *     Kept so older clients still decode.
+             */
             group_id?: number;
-            last_name: string;
+            idNumber?: string;
+            id_number?: string;
+            /**
+             * @description LastName is the personal ID (legacy column reuse). App builds up
+             *     to 1.0 sent the surname here and the ID as `idNumber`; when an ID
+             *     field is present it wins and the surname joins the display name.
+             */
+            last_name?: string;
+            otpId?: number;
+            otp_code?: string;
+            /**
+             * @description The register OTP sent to Phone. Older builds used `otpId` (a
+             *     string) and `code`.
+             */
+            otp_id?: number;
             password: string;
-            phone?: string;
+            phone: string;
             zip?: string;
         };
         "internal_handlers.ReminderPreview": {
@@ -4839,6 +5029,10 @@ export interface components {
         "internal_handlers.SexCount": {
             count: number;
             sex: string;
+        };
+        "internal_handlers.ShareTokenResponse": {
+            expires_at: string;
+            token: string;
         };
         "internal_handlers.ShopResponse": {
             comment?: string;
@@ -4912,47 +5106,6 @@ export interface components {
             procedures?: components["schemas"]["internal_handlers.ProcedureTypeRevenue"][];
             total?: string;
             year?: string;
-        };
-        "vetapp-backend_internal_models.Pet": {
-            /** @description Birthday MM-DD (greeting SMS) */
-            birth?: string;
-            /** @description Subscription expiry */
-            birth2?: string;
-            /** @description Neutering type */
-            cast?: string;
-            /** @description Neutering date */
-            castdate?: string;
-            /** @description Microchip number */
-            chip?: string;
-            /** @description Microchip implant date */
-            chipd?: string;
-            /** @description 4-digit access code */
-            code?: string;
-            color?: string;
-            /** @description DOB as string (YYYY-MM-DD) */
-            date?: string;
-            /** @description Owner email (denormalized) */
-            email?: string;
-            /** @description Owner name (denormalized) */
-            first_name?: string;
-            id?: number;
-            /** @description Pet name */
-            name?: string;
-            /** @description Species: ძაღლი, კატა, სხვა */
-            pet?: string;
-            /** @description INHABITANT, ADOPTED, WORKMATE */
-            petStatus?: string;
-            /** @description Owner phone (denormalized) */
-            phone?: string;
-            sex?: string;
-            /** @description 1=active, 2+=inactive */
-            status?: number;
-            /** @description Owner personal ID (FK to user.last_name) */
-            uuid?: string;
-            /** @description Breed */
-            variety?: string;
-            /** @description Clinic zip code */
-            vet?: string;
         };
         "vetapp-backend_internal_models.Procedure": {
             /**

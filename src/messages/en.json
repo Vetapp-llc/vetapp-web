@@ -290,12 +290,14 @@
     "scanQr": "Scan this QR code to view this pet's medical passport",
     "poweredBy": "Powered by VetApp",
     "pinLookup": "Look up pet by PIN",
-    "pinPlaceholder": "Enter 4-digit PIN",
+    "pinPlaceholder": "Enter 6-digit PIN",
     "pinSearch": "Search",
     "pinSearching": "Searching...",
-    "pinInvalid": "Please enter a valid 4-digit PIN",
-    "pinNotFound": "No pet found with this PIN code",
-    "pinDescription": "Enter the 4-digit PIN code provided by the pet owner"
+    "pinInvalid": "Please enter a valid 6-digit PIN",
+    "pinNotFound": "The PIN is wrong or has expired (PINs are valid for 1 hour).",
+    "pinDescription": "Enter the 6-digit PIN code provided by the pet owner",
+    "linkInvalid": "This link is invalid or has expired. Ask the pet owner to show the QR code again or give you a new PIN.",
+    "pinTooMany": "Too many attempts. Please wait a minute and try again."
   },
   "admin": {
     "title": "Admin Panel",

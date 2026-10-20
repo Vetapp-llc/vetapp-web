@@ -5,7 +5,8 @@ import { useTranslations } from "next-intl";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiRequest, todayGeorgia } from "@/lib/api/request";
 import {
-  useSales, usePrices, useStaff, useAppointments, usePromo, type Sale, type PriceItem, type StaffMember,
+  useSales, useProducts, usePrices, useStaff, useAppointments, usePromo,
+  type Sale, type Product, type PriceItem, type StaffMember,
 } from "@/lib/hooks/useClinicFeatures";
 import { Pagination } from "../Pagination";
 import { Button, Card, ConfirmButton, Empty, Field, Modal, Notice, PageTitle, inputClass } from "@/components/ui/kit";
@@ -34,7 +35,10 @@ function useError() {
   return { err, run, setErr };
 }
 
-/* ─── Shop (vet/shop.php, shopadd.php, shopadit.php) ─── */
+/* ─── Shop: stock (საწყობი) and sales (vet/shop.php, shopadd.php, shopadit.php) ─── */
+
+/** At or below this many units a product is flagged for restocking. */
+const LOW_STOCK = 5;
 
 export function ShopView() {
   const t = useTranslations("features");
@@ -43,14 +47,58 @@ export function ShopView() {
   const [to, setTo] = useState(todayGeorgia());
   const [page, setPage] = useState(1);
   const { data, isLoading } = useSales(from, to, page);
-  const [editing, setEditing] = useState<Sale | "new" | null>(null);
+  const { data: products } = useProducts();
+  const [editing, setEditing] = useState<Sale | null>(null);
+  const [product, setProduct] = useState<Product | "new" | null>(null);
+  const [realizing, setRealizing] = useState(false);
   const { err, run } = useError();
-  const refresh = () => qc.invalidateQueries({ queryKey: ["shop"] });
+  const refresh = () => {
+    qc.invalidateQueries({ queryKey: ["shop"] });
+    qc.invalidateQueries({ queryKey: ["shop-products"] });
+  };
 
   return (
     <div>
-      <PageTitle actions={<Button onClick={() => setEditing("new")}>{t("addSale")}</Button>}>{t("shop")}</PageTitle>
+      <PageTitle actions={<>
+        <Button variant="secondary" onClick={() => setProduct("new")}>{t("addProduct")}</Button>
+        <Button onClick={() => setRealizing(true)}>{t("realize")}</Button>
+      </>}>{t("shop")}</PageTitle>
+      {err && <Notice>{err}</Notice>}
+
       <Card className="mb-4">
+        <h2 className="mb-2 text-sm font-bold text-primary-dark">{t("stock")}</h2>
+        {!products ? <p className="text-sm">{t("loading")}</p> : products.length === 0 ? <Empty>{t("noProducts")}</Empty> : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead><tr className="text-left text-[0.625rem] uppercase text-foreground-muted/60">
+                <th className="py-2">{t("product")}</th><th className="text-right">{t("inStock")}</th><th className="text-right">{t("unitPrice")}</th><th />
+              </tr></thead>
+              <tbody>
+                {products.map((p) => {
+                  const low = p.quantity <= LOW_STOCK;
+                  return (
+                    <tr key={p.id} className="border-t border-gray-50">
+                      <td className="py-2 font-medium text-primary-dark">{p.name}</td>
+                      <td className="whitespace-nowrap text-right">
+                        <span className={`font-bold tabular-nums ${low ? "text-red-600" : "text-primary-dark"}`}>{p.quantity}</span>
+                        {low && <span className="ml-2 rounded-md bg-red-50 px-1.5 py-0.5 text-[0.6875rem] font-semibold text-red-600">{t("lowStock")}</span>}
+                      </td>
+                      <td className="whitespace-nowrap text-right tabular-nums">{p.unitPrice} ₾</td>
+                      <td className="whitespace-nowrap text-right">
+                        <Button small variant="ghost" onClick={() => setProduct(p)}>{t("edit")}</Button>
+                        <ConfirmButton confirmLabel={t("confirmDelete")} onConfirm={() => run(async () => { await apiRequest("DELETE", `/shop/products/${p.id}`); refresh(); })}>{t("delete")}</ConfirmButton>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </Card>
+
+      <Card className="mb-4">
+        <h2 className="mb-2 text-sm font-bold text-primary-dark">{t("sales")}</h2>
         <div className="flex flex-wrap items-end gap-3">
           <Field label={t("from")}><input type="date" className={inputClass} value={from} onChange={(e) => { setFrom(e.target.value); setPage(1); }} /></Field>
           <Field label={t("to")}><input type="date" className={inputClass} value={to} onChange={(e) => { setTo(e.target.value); setPage(1); }} /></Field>
@@ -59,18 +107,17 @@ export function ShopView() {
         </div>
         {data && (
           <div className="mt-3 grid grid-cols-3 gap-2 text-center">
-            <div className="rounded-xl bg-gray-50 py-2"><p className="text-[10px] uppercase text-foreground-muted/60">{t("card")}</p><p className="font-bold">{data.totals.card} ₾</p></div>
-            <div className="rounded-xl bg-gray-50 py-2"><p className="text-[10px] uppercase text-foreground-muted/60">{t("cash")}</p><p className="font-bold">{data.totals.cash} ₾</p></div>
-            <div className="rounded-xl bg-primary/10 py-2"><p className="text-[10px] uppercase text-foreground-muted/60">{t("total")}</p><p className="font-bold text-primary">{data.totals.total} ₾</p></div>
+            <div className="rounded-xl bg-gray-50 py-2"><p className="text-[0.625rem] uppercase text-foreground-muted/60">{t("card")}</p><p className="font-bold">{data.totals.card} ₾</p></div>
+            <div className="rounded-xl bg-gray-50 py-2"><p className="text-[0.625rem] uppercase text-foreground-muted/60">{t("cash")}</p><p className="font-bold">{data.totals.cash} ₾</p></div>
+            <div className="rounded-xl bg-primary/10 py-2"><p className="text-[0.625rem] uppercase text-foreground-muted/60">{t("total")}</p><p className="font-bold text-primary">{data.totals.total} ₾</p></div>
           </div>
         )}
       </Card>
-      {err && <Notice>{err}</Notice>}
       {isLoading ? <p className="text-sm">{t("loading")}</p> : !data || data.data.length === 0 ? <Empty>{t("none")}</Empty> : (
         <Card>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead><tr className="text-left text-[10px] uppercase text-foreground-muted/60">
+              <thead><tr className="text-left text-[0.625rem] uppercase text-foreground-muted/60">
                 <th className="py-2">{t("date")}</th><th>{t("product")}</th><th>{t("comment")}</th><th>{t("method")}</th><th className="text-right">{t("price")}</th><th />
               </tr></thead>
               <tbody>
@@ -82,8 +129,12 @@ export function ShopView() {
                     <td>{s.method === "ბარათი" ? t("card") : s.method ? t("cash") : ""}</td>
                     <td className="text-right font-semibold whitespace-nowrap">{s.price} ₾</td>
                     <td className="whitespace-nowrap text-right">
-                      <Button small variant="ghost" onClick={() => setEditing(s)}>{t("edit")}</Button>
-                      <ConfirmButton confirmLabel={t("confirmDelete")} onConfirm={() => run(async () => { await apiRequest("DELETE", `/shop/${s.id}`); refresh(); })}>{t("delete")}</ConfirmButton>
+                      {/* A sale from stock is deleted, not edited: deleting returns its units. */}
+                      {!s.productId && <Button small variant="ghost" onClick={() => setEditing(s)}>{t("edit")}</Button>}
+                      <ConfirmButton
+                        confirmLabel={s.productId ? t("confirmDeleteSale") : t("confirmDelete")}
+                        onConfirm={() => run(async () => { await apiRequest("DELETE", `/shop/${s.id}`); refresh(); })}
+                      >{t("delete")}</ConfirmButton>
                     </td>
                   </tr>
                 ))}
@@ -93,28 +144,134 @@ export function ShopView() {
           <Pagination page={page} totalPages={data.totalPages} onPageChange={setPage} />
         </Card>
       )}
-      {editing && <SaleModal sale={editing === "new" ? null : editing} onClose={() => setEditing(null)} onSaved={() => { setEditing(null); refresh(); }} />}
+      {editing && <SaleModal sale={editing} onClose={() => setEditing(null)} onSaved={() => { setEditing(null); refresh(); }} />}
+      {product && <ProductModal product={product === "new" ? null : product} onClose={() => setProduct(null)} onSaved={() => { setProduct(null); refresh(); }} />}
+      {realizing && <RealizeModal products={products ?? []} onClose={() => setRealizing(false)} onSaved={() => { setRealizing(false); refresh(); }} />}
     </div>
   );
 }
 
-function SaleModal({ sale, onClose, onSaved }: { sale: Sale | null; onClose: () => void; onSaved: () => void }) {
+function ProductModal({ product, onClose, onSaved }: { product: Product | null; onClose: () => void; onSaved: () => void }) {
   const t = useTranslations("features");
   const [f, setF] = useState({
-    name: sale?.name ?? "", price: sale?.price ?? "", date: sale?.date ?? todayGeorgia(),
-    method: sale?.method === "ბარათი" ? "card" : "cash", comment: sale?.comment ?? "",
+    name: product?.name ?? "", quantity: product ? String(product.quantity) : "", unitPrice: product?.unitPrice ?? "",
+  });
+  const [busy, setBusy] = useState(false);
+  const { err, run } = useError();
+  const valid = f.name.trim() && /^\d{1,7}$/.test(f.quantity.trim()) && MONEY.test(f.unitPrice.trim());
+  const save = async () => {
+    setBusy(true);
+    const body = { name: f.name.trim(), quantity: Number(f.quantity.trim()), unitPrice: f.unitPrice.trim() };
+    const ok = await run(() => apiRequest(product ? "PUT" : "POST", product ? `/shop/products/${product.id}` : "/shop/products", body));
+    setBusy(false);
+    if (ok) onSaved();
+  };
+  return (
+    <Modal open title={product ? t("edit") : t("addProduct")} onClose={onClose}>
+      <div className="space-y-3">
+        {err && <Notice>{err}</Notice>}
+        <Field label={<Req>{t("productName")}</Req>}><input className={inputClass} value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} /></Field>
+        <div className="grid grid-cols-2 gap-3">
+          <Field label={<Req>{t("quantityInStock")}</Req>}><input className={inputClass} inputMode="numeric" value={f.quantity} onChange={(e) => setF({ ...f, quantity: e.target.value })} /></Field>
+          <Field label={<Req>{t("unitPrice")}</Req>}><input className={inputClass} inputMode="decimal" value={f.unitPrice} onChange={(e) => setF({ ...f, unitPrice: e.target.value })} /></Field>
+        </div>
+        <div className="flex justify-end gap-2">
+          <Button variant="secondary" onClick={onClose}>{t("cancel")}</Button>
+          <Button onClick={save} disabled={busy || !valid}>{busy ? t("saving") : t("save")}</Button>
+        </div>
+      </div>
+    </Modal>
+  );
+}
+
+function RealizeModal({ products, onClose, onSaved }: { products: Product[]; onClose: () => void; onSaved: () => void }) {
+  const t = useTranslations("features");
+  const [productId, setProductId] = useState("");
+  const [quantity, setQuantity] = useState("1");
+  const [date, setDate] = useState(todayGeorgia());
+  const [method, setMethod] = useState<"cash" | "card">("cash");
+  const [comment, setComment] = useState("");
+  const [busy, setBusy] = useState(false);
+  const { err, run } = useError();
+  const product = products.find((p) => String(p.id) === productId);
+  const qty = /^\d{1,7}$/.test(quantity.trim()) ? Number(quantity.trim()) : 0;
+  const tooMany = !!product && qty > product.quantity;
+  const total = product ? Math.round(Number(product.unitPrice) * qty * 100) / 100 : 0;
+  const valid = !!product && qty >= 1 && !tooMany && /^\d{4}-\d{2}-\d{2}$/.test(date);
+  const save = async () => {
+    setBusy(true);
+    const ok = await run(() => apiRequest("POST", "/shop/realize", { productId: Number(productId), quantity: qty, date, method, comment: comment.trim() }));
+    setBusy(false);
+    if (ok) onSaved();
+  };
+  return (
+    <Modal open title={t("realize")} onClose={onClose}>
+      <div className="space-y-3">
+        {err && <Notice>{err}</Notice>}
+        {products.length === 0 ? <Empty>{t("noProducts")}</Empty> : (
+          <>
+            <Field label={<Req>{t("product")}</Req>}>
+              <select className={inputClass} value={productId} onChange={(e) => setProductId(e.target.value)}>
+                <option value="">{t("selectProduct")}</option>
+                {products.map((p) => (
+                  <option key={p.id} value={p.id} disabled={p.quantity === 0}>
+                    {p.name} — {t("unitsLeft", { count: p.quantity })} · {p.unitPrice} ₾
+                  </option>
+                ))}
+              </select>
+            </Field>
+            <div className="grid grid-cols-2 gap-3">
+              <Field label={<Req>{t("quantity")}</Req>}>
+                <input className={`${inputClass} ${tooMany ? "border-red-400" : ""}`} inputMode="numeric" value={quantity} onChange={(e) => setQuantity(e.target.value)} />
+              </Field>
+              <Field label={<Req>{t("date")}</Req>}><input type="date" className={inputClass} value={date} onChange={(e) => setDate(e.target.value)} /></Field>
+              <Field label={t("method")}>
+                <select className={inputClass} value={method} onChange={(e) => setMethod(e.target.value as "cash" | "card")}>
+                  <option value="cash">{t("cash")}</option><option value="card">{t("card")}</option>
+                </select>
+              </Field>
+              <Field label={t("comment")}><input className={inputClass} value={comment} onChange={(e) => setComment(e.target.value)} /></Field>
+            </div>
+            {tooMany && <p className="text-xs text-red-600">{t("notEnoughStock", { count: product!.quantity })}</p>}
+            {product && qty > 0 && !tooMany && (
+              <div className="flex justify-between rounded-xl bg-primary/5 px-4 py-3 text-sm">
+                <span className="text-foreground-muted/70">{qty} × {product.unitPrice} ₾</span>
+                <b className="text-primary-dark">{total} ₾</b>
+              </div>
+            )}
+          </>
+        )}
+        <div className="flex justify-end gap-2">
+          <Button variant="secondary" onClick={onClose}>{t("cancel")}</Button>
+          <Button onClick={save} disabled={busy || !valid}>{busy ? t("saving") : t("confirm")}</Button>
+        </div>
+      </div>
+    </Modal>
+  );
+}
+
+/** A required field's label, marked with an asterisk. */
+function Req({ children }: { children: React.ReactNode }) {
+  return <>{children} <span className="text-red-500">*</span></>;
+}
+
+function SaleModal({ sale, onClose, onSaved }: { sale: Sale; onClose: () => void; onSaved: () => void }) {
+  const t = useTranslations("features");
+  const [f, setF] = useState({
+    name: sale.name, price: sale.price, date: sale.date,
+    method: sale.method === "ბარათი" ? "card" : "cash", comment: sale.comment,
   });
   const [busy, setBusy] = useState(false);
   const { err, run } = useError();
   const valid = f.name.trim() && MONEY.test(f.price.trim()) && /^\d{4}-\d{2}-\d{2}$/.test(f.date);
   const save = async () => {
     setBusy(true);
-    const ok = await run(() => apiRequest(sale ? "PUT" : "POST", sale ? `/shop/${sale.id}` : "/shop", { ...f, name: f.name.trim(), price: f.price.trim() }));
+    const ok = await run(() => apiRequest("PUT", `/shop/${sale.id}`, { ...f, name: f.name.trim(), price: f.price.trim() }));
     setBusy(false);
     if (ok) onSaved();
   };
   return (
-    <Modal open title={sale ? t("edit") : t("addSale")} onClose={onClose}>
+    <Modal open title={t("edit")} onClose={onClose}>
       <div className="space-y-3">
         {err && <Notice>{err}</Notice>}
         <Field label={t("product")}><input className={inputClass} value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} /></Field>
@@ -253,7 +410,10 @@ function StaffModal({ member, onClose, onSaved }: { member: StaffMember | null; 
   const [busy, setBusy] = useState(false);
   const { err, run } = useError();
   const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(f.email.trim());
-  const valid = f.first_name.trim() && emailOk && (member ? true : f.last_name.trim() && f.password.length >= 6);
+  // Adding a vet needs every field; an existing one (some have no phone
+  // or personal ID on file) keeps the old minimum, name and email.
+  const valid = f.first_name.trim() && emailOk && (member ? true : f.last_name.trim() && f.phone.trim() && f.password.length >= 6);
+  const opt = (label: string) => (member ? label : <Req>{label}</Req>);
   const save = async () => {
     setBusy(true);
     const body = member
@@ -267,15 +427,16 @@ function StaffModal({ member, onClose, onSaved }: { member: StaffMember | null; 
     <Modal open title={member ? t("edit") : t("addVet")} onClose={onClose}>
       <div className="space-y-3">
         {err && <Notice>{err}</Notice>}
-        <Field label={t("firstName")}><input className={inputClass} value={f.first_name} onChange={(e) => setF({ ...f, first_name: e.target.value })} /></Field>
-        <Field label={t("personalId")}><input className={inputClass} value={f.last_name} onChange={(e) => setF({ ...f, last_name: e.target.value })} /></Field>
-        <Field label={t("email")}><input className={inputClass} type="email" value={f.email} onChange={(e) => setF({ ...f, email: e.target.value })} /></Field>
-        <Field label={t("phone")}><input className={inputClass} value={f.phone} onChange={(e) => setF({ ...f, phone: e.target.value })} /></Field>
+        <Field label={<Req>{t("firstName")}</Req>}><input className={inputClass} required value={f.first_name} onChange={(e) => setF({ ...f, first_name: e.target.value })} /></Field>
+        <Field label={opt(t("personalId"))}><input className={inputClass} required={!member} value={f.last_name} onChange={(e) => setF({ ...f, last_name: e.target.value })} /></Field>
+        <Field label={<Req>{t("email")}</Req>}><input className={inputClass} required type="email" value={f.email} onChange={(e) => setF({ ...f, email: e.target.value })} /></Field>
+        <Field label={opt(t("phone"))}><input className={inputClass} required={!member} type="tel" value={f.phone} onChange={(e) => setF({ ...f, phone: e.target.value })} /></Field>
         {!member && (
-          <Field label={`${t("password")} — ${t("passwordHint")}`}>
-            <input className={inputClass} type="password" autoComplete="new-password" value={f.password} onChange={(e) => setF({ ...f, password: e.target.value })} />
+          <Field label={<Req>{`${t("password")} — ${t("passwordHint")}`}</Req>}>
+            <input className={inputClass} required type="password" autoComplete="new-password" value={f.password} onChange={(e) => setF({ ...f, password: e.target.value })} />
           </Field>
         )}
+        <p className="text-xs text-foreground-muted/60"><span className="text-red-500">*</span> {t("requiredFields")}</p>
         <div className="flex justify-end gap-2">
           <Button variant="secondary" onClick={onClose}>{t("cancel")}</Button>
           <Button onClick={save} disabled={busy || !valid}>{busy ? t("saving") : t("save")}</Button>
@@ -353,7 +514,7 @@ export function PromoView() {
         <Card>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead><tr className="text-left text-[10px] uppercase text-foreground-muted/60">
+              <thead><tr className="text-left text-[0.625rem] uppercase text-foreground-muted/60">
                 <th className="py-2">{t("name")}</th><th>{t("personalId")}</th><th>{t("phone")}</th><th>{t("email")}</th><th>{t("pets")}</th><th>{t("registered")}</th>
               </tr></thead>
               <tbody>

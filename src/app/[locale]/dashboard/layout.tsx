@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import { useTranslations } from "next-intl";
-import { Link, useRouter } from "@/i18n/navigation";
+import { Link, usePathname, useRouter } from "@/i18n/navigation";
 import { LocaleToggle } from "@/components/locale-toggle";
 import { getClinicInfo, getStoredSession, clearSession } from "@/lib/utils/session";
 import { DashboardViewProvider, useDashboardView } from "@/lib/context/DashboardViewContext";
@@ -118,6 +118,8 @@ function NavBar() {
   const t = useTranslations("dashboard");
   const ta = useTranslations("admin");
   const router = useRouter();
+  const pathname = usePathname();
+  const { setView } = useDashboardView();
   const [clinicName, setClinicName] = useState("");
   const [hasToken, setHasToken] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
@@ -138,7 +140,19 @@ function NavBar() {
     <nav className="sticky top-0 z-40 bg-white/80 backdrop-blur-xl">
       <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-2">
         <div className="flex items-center gap-4">
-          <Link href="/dashboard" className="flex items-center gap-2">
+          {/* The logo goes back to the main page. On the dashboard the views
+              are not routes, so it switches to the home view itself. */}
+          <Link
+            href="/dashboard"
+            aria-label={t("home")}
+            onClick={(e) => {
+              if (pathname !== "/dashboard") return;
+              e.preventDefault();
+              setView("home");
+              window.scrollTo({ top: 0, behavior: "smooth" });
+            }}
+            className="flex items-center gap-2 rounded-lg transition-opacity hover:opacity-70"
+          >
             <Image
               src="/images/vetapp-logo.png"
               alt="VetApp"

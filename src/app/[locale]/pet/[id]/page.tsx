@@ -177,7 +177,7 @@ export default async function PetProfilePage({
 function InfoRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-lg bg-[#f8fbfe] px-3 py-2">
-      <p className="text-[10px] font-medium uppercase tracking-wider text-foreground-muted">
+      <p className="text-[0.625rem] font-medium uppercase tracking-wider text-foreground-muted">
         {label}
       </p>
       <p className="text-sm font-semibold text-primary-dark">{value}</p>

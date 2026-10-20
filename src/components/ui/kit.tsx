@@ -8,7 +8,7 @@ import { useBackClose } from "@/lib/hooks/useBackClose";
 
 export const inputClass =
   "mt-1 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary disabled:bg-gray-50";
-export const labelClass = "text-[10px] font-semibold uppercase tracking-wider text-foreground-muted/60";
+export const labelClass = "text-[0.625rem] font-semibold uppercase tracking-wider text-foreground-muted/60";
 
 export function Button({
   children, onClick, variant = "primary", disabled, type = "button", small, title,
@@ -157,8 +157,8 @@ export function PageTitle({ children, actions }: { children: ReactNode; actions?
 /** Paid / unpaid badge for a procedure's `phone` flag. */
 export function PaidBadge({ paid, paidLabel, unpaidLabel }: { paid: boolean; paidLabel: string; unpaidLabel: string }) {
   return paid ? (
-    <span className="rounded-md bg-emerald-50 px-1.5 py-0.5 text-[10px] font-bold text-emerald-700">{paidLabel}</span>
+    <span className="rounded-md bg-emerald-50 px-1.5 py-0.5 text-[0.625rem] font-bold text-emerald-700">{paidLabel}</span>
   ) : (
-    <span className="rounded-md bg-amber-50 px-1.5 py-0.5 text-[10px] font-bold text-amber-700">{unpaidLabel}</span>
+    <span className="rounded-md bg-amber-50 px-1.5 py-0.5 text-[0.625rem] font-bold text-amber-700">{unpaidLabel}</span>
   );
 }

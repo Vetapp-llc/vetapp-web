@@ -43,7 +43,7 @@ const L = {
 function Row({ k, v }: { k: string; v?: string }) {
   return (
     <tr className="border-b border-gray-100">
-      <th className="w-1/2 py-1 pr-2 text-left text-[11px] font-medium text-gray-500">{k}</th>
+      <th className="w-1/2 py-1 pr-2 text-left text-[0.6875rem] font-medium text-gray-500">{k}</th>
       <td className="py-1 text-sm font-semibold">{v?.trim() || L.none}</td>
     </tr>
   );
@@ -374,7 +374,7 @@ export function BookAppointmentModal({
           <Field label={t("comment")} className="sm:col-span-2"><input className={inputClass} value={koment} onChange={(e) => setKoment(e.target.value)} /></Field>
         </div>
         <div>
-          <span className="text-[10px] font-semibold uppercase tracking-wider text-foreground-muted/60">{t("time")}</span>
+          <span className="text-[0.625rem] font-semibold uppercase tracking-wider text-foreground-muted/60">{t("time")}</span>
           <div className="mt-1 flex flex-wrap gap-1.5">
             <button onClick={() => setTime("")} className={`rounded-lg px-2.5 py-1 text-xs cursor-pointer ${time === "" ? "bg-primary text-white" : "bg-gray-100"}`}>{t("noTime")}</button>
             {(slots ?? []).map((s) => (

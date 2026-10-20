@@ -134,7 +134,7 @@ export function PetDetailModal({ open, petId, ownerProof, onClose, onViewOwner }
               <div className="mt-3 flex flex-wrap gap-2">
                 <button
                   onClick={() => setVisitBuilderOpen(true)}
-                  className="inline-flex items-center gap-1 rounded-xl bg-primary px-3 py-2 text-[11px] font-bold text-white hover:bg-primary/90 transition-colors cursor-pointer sm:gap-1.5 sm:px-4 sm:text-xs"
+                  className="inline-flex items-center gap-1 rounded-xl bg-primary px-3 py-2 text-[0.6875rem] font-bold text-white hover:bg-primary/90 transition-colors cursor-pointer sm:gap-1.5 sm:px-4 sm:text-xs"
                 >
                   <svg className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
                     <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
@@ -143,13 +143,13 @@ export function PetDetailModal({ open, petId, ownerProof, onClose, onViewOwner }
                 </button>
                 <button
                   onClick={() => setBookOpen(true)}
-                  className="inline-flex items-center rounded-xl border border-primary/30 bg-white px-3 py-2 text-[11px] font-bold text-primary hover:bg-primary/5 transition-colors cursor-pointer sm:px-4 sm:text-xs"
+                  className="inline-flex items-center rounded-xl border border-primary/30 bg-white px-3 py-2 text-[0.6875rem] font-bold text-primary hover:bg-primary/5 transition-colors cursor-pointer sm:px-4 sm:text-xs"
                 >
                   {tf("bookAppointment")}
                 </button>
                 <button
                   onClick={() => setCertOpen(true)}
-                  className="inline-flex items-center rounded-xl border border-gray-200 bg-white px-3 py-2 text-[11px] font-bold text-primary-dark hover:bg-gray-50 transition-colors cursor-pointer sm:px-4 sm:text-xs"
+                  className="inline-flex items-center rounded-xl border border-gray-200 bg-white px-3 py-2 text-[0.6875rem] font-bold text-primary-dark hover:bg-gray-50 transition-colors cursor-pointer sm:px-4 sm:text-xs"
                 >
                   {tf("certificate")}
                 </button>
@@ -159,19 +159,19 @@ export function PetDetailModal({ open, petId, ownerProof, onClose, onViewOwner }
               <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
                 {pet.color && (
                   <div className="rounded-xl bg-white/80 px-3 py-2">
-                    <p className="text-[10px] font-semibold uppercase tracking-wider text-foreground-muted/50">{t("color")}</p>
+                    <p className="text-[0.625rem] font-semibold uppercase tracking-wider text-foreground-muted/50">{t("color")}</p>
                     <p className="text-sm font-semibold text-primary-dark">{pet.color}</p>
                   </div>
                 )}
                 {pet.chip && (
                   <div className="rounded-xl bg-white/80 px-3 py-2">
-                    <p className="text-[10px] font-semibold uppercase tracking-wider text-foreground-muted/50">{t("chip")}</p>
+                    <p className="text-[0.625rem] font-semibold uppercase tracking-wider text-foreground-muted/50">{t("chip")}</p>
                     <p className="text-sm font-semibold text-primary-dark truncate">{pet.chip}</p>
                   </div>
                 )}
                 {pet.castrated && (
                   <div className="rounded-xl bg-white/80 px-3 py-2">
-                    <p className="text-[10px] font-semibold uppercase tracking-wider text-foreground-muted/50">{t("castrated")}</p>
+                    <p className="text-[0.625rem] font-semibold uppercase tracking-wider text-foreground-muted/50">{t("castrated")}</p>
                     <p className="text-sm font-semibold text-primary-dark">{formatDate(pet.castDate)}</p>
                   </div>
                 )}

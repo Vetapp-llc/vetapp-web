@@ -135,7 +135,8 @@
     "validationChipDigits": "Номер чипа может содержать только цифры",
     "validationEmailInvalid": "Неверный формат эл. почты",
     "statusAdopted": "Пристроенный",
-    "statusService": "Служебный"
+    "statusService": "Служебный",
+    "home": "Главная"
   },
   "clinic": {
     "petsTab": "Питомцы",
@@ -203,7 +204,17 @@
     "monthlyBreakdown": "Разбивка по месяцам",
     "date": "Дата",
     "procedures": "Процедуры",
-    "newVisit": "Новый приём"
+    "newVisit": "Новый приём",
+    "filteredStats": "Статистика по периоду и процедурам",
+    "period": {
+      "day": "1 день",
+      "month": "1 месяц",
+      "3months": "3 месяца",
+      "6months": "6 месяцев",
+      "year": "1 год"
+    },
+    "periodEnd": "По",
+    "noProceduresInPeriod": "В этот период процедур нет"
   },
   "visit": {
     "date": "Дата",
@@ -267,7 +278,9 @@
     "vetMe": "Я",
     "paymentFailed": "Оплата не прошла",
     "requiredMissing": "Заполните обязательные поля",
-    "remove": "Удалить"
+    "remove": "Удалить",
+    "sharedNotesHint": "Анамнез, диагноз и заметка вводятся один раз и сохраняются для всех процедур визита.",
+    "noExtraFields": "Дополнительных полей нет"
   },
   "petProfile": {
     "title": "Ветеринарный паспорт",
@@ -447,7 +460,26 @@
     "otherProcedure": "Другое (введите название)",
     "operationName": "Название операции / процедуры",
     "addProcedure": "Добавить процедуру",
-    "birthShort": "Д.р."
+    "birthShort": "Д.р.",
+    "visitNotes": "Дополнительно",
+    "procedureCount": "{count, plural, one {# процедура} few {# процедуры} other {# процедур}}",
+    "addProduct": "Добавить товар",
+    "realize": "Реализация",
+    "stock": "Склад",
+    "noProducts": "На складе нет товаров — добавьте через «Добавить товар»",
+    "inStock": "Остаток",
+    "unitPrice": "Цена за единицу",
+    "lowStock": "Нужно пополнить",
+    "sales": "Продажи",
+    "confirmDeleteSale": "Удалить? Количество вернётся на склад",
+    "productName": "Название товара",
+    "quantityInStock": "Количество на складе",
+    "quantity": "Количество",
+    "selectProduct": "Выберите товар",
+    "unitsLeft": "{count} шт.",
+    "notEnoughStock": "На складе только {count} шт.",
+    "confirm": "Подтвердить",
+    "requiredFields": "Обязательные поля"
   },
   "menu": {
     "shop": "Продажи",

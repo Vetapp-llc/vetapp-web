@@ -27,7 +27,12 @@ export interface ProcedureRow {
 
 export interface StaffMember { id: number; first_name: string; last_name: string; email: string; phone: string; status: string }
 export interface PriceItem { id: number; name: string; price: string }
-export interface Sale { id: number; name: string; price: string; date: string; method: string; comment: string }
+export interface Sale {
+  id: number; name: string; price: string; date: string; method: string; comment: string;
+  /** Set on sales made from stock. */
+  productId?: number; quantity?: number;
+}
+export interface Product { id: number; name: string; quantity: number; unitPrice: string }
 export interface SalesTotals { card: string; cash: string; total: string }
 export interface Appointment {
   id: number; uuid: string; date: string; booked_on: string; time: string; vetname: string;
@@ -128,6 +133,10 @@ export function useSales(from: string, to: string, page: number) {
     queryFn: () => GET(`/shop${qs({ date_from: from, date_to: to, page, pageSize: 50 })}`),
     placeholderData: keepPreviousData,
   });
+}
+
+export function useProducts() {
+  return useQuery<Product[]>({ queryKey: ["shop-products"], queryFn: () => GET("/shop/products") });
 }
 
 export function useAppointments(from: string, to: string, petId?: string) {

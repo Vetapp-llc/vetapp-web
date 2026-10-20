@@ -103,7 +103,7 @@ function PetsTab({ onViewPet }: { onViewPet: (id: string) => void }) {
                     <p className="text-xs text-foreground-muted/40">{pet.ownerPhone}</p>
                   </div>
                   {pet.chip && (
-                    <span className="hidden md:inline-flex rounded-lg bg-gray-100 px-2 py-0.5 text-[10px] font-mono text-foreground-muted/50">
+                    <span className="hidden md:inline-flex rounded-lg bg-gray-100 px-2 py-0.5 text-[0.625rem] font-mono text-foreground-muted/50">
                       {pet.chip}
                     </span>
                   )}

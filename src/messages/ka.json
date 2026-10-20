@@ -135,7 +135,8 @@
     "validationChipDigits": "ჩიპის ნომერი უნდა შეიცავდეს მხოლოდ ციფრებს",
     "validationEmailInvalid": "ელ-ფოსტის ფორმატი არასწორია",
     "statusAdopted": "მიკედლებული",
-    "statusService": "სასამსახურო"
+    "statusService": "სასამსახურო",
+    "home": "მთავარი გვერდი"
   },
   "clinic": {
     "petsTab": "ცხოველები",
@@ -203,7 +204,17 @@
     "monthlyBreakdown": "თვიური დეტალები",
     "date": "თარიღი",
     "procedures": "პროცედურები",
-    "newVisit": "ახალი ვიზიტი"
+    "newVisit": "ახალი ვიზიტი",
+    "filteredStats": "სტატისტიკა პერიოდისა და პროცედურების მიხედვით",
+    "period": {
+      "day": "1 დღე",
+      "month": "1 თვე",
+      "3months": "3 თვე",
+      "6months": "6 თვე",
+      "year": "1 წელი"
+    },
+    "periodEnd": "ბოლო დღე",
+    "noProceduresInPeriod": "ამ პერიოდში პროცედურები არ არის"
   },
   "visit": {
     "date": "თარიღი",
@@ -267,7 +278,9 @@
     "vetMe": "მე",
     "paymentFailed": "გადახდა ვერ შესრულდა",
     "requiredMissing": "შეავსეთ სავალდებულო ველები",
-    "remove": "წაშლა"
+    "remove": "წაშლა",
+    "sharedNotesHint": "ანამნეზი, დიაგნოზი და შენიშვნა ერთხელ ივსება და ამ ვიზიტის ყველა პროცედურაზე ინახება.",
+    "noExtraFields": "დამატებითი ველები არ არის"
   },
   "petProfile": {
     "title": "ცხოველის სამედიცინო პასპორტი",
@@ -447,7 +460,26 @@
     "otherProcedure": "სხვა (ჩაწერეთ დასახელება)",
     "operationName": "ოპერაციის / პროცედურის დასახელება",
     "addProcedure": "პროცედურის დამატება",
-    "birthShort": "დ.თ"
+    "birthShort": "დ.თ",
+    "visitNotes": "დამატებითი",
+    "procedureCount": "{count} პროცედურა",
+    "addProduct": "პროდუქტის დამატება",
+    "realize": "რეალიზაცია",
+    "stock": "საწყობი",
+    "noProducts": "საწყობში პროდუქტები არ არის — დაამატეთ „პროდუქტის დამატება“-ით",
+    "inStock": "ნაშთი",
+    "unitPrice": "ერთეულის ფასი",
+    "lowStock": "შესავსებია მარაგი",
+    "sales": "გაყიდვები",
+    "confirmDeleteSale": "წავშალო? რაოდენობა საწყობს დაუბრუნდება",
+    "productName": "პროდუქტის დასახელება",
+    "quantityInStock": "რაოდენობა (მარაგში)",
+    "quantity": "რაოდენობა",
+    "selectProduct": "აირჩიეთ პროდუქტი",
+    "unitsLeft": "{count} ცალი",
+    "notEnoughStock": "მარაგში მხოლოდ {count} ცალია",
+    "confirm": "დადასტურება",
+    "requiredFields": "სავალდებულო ველები"
   },
   "menu": {
     "shop": "მაღაზია",

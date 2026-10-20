@@ -3,6 +3,7 @@
 import { useTranslations } from "next-intl";
 import { useClinicStats } from "@/lib/hooks/useClinicData";
 import { DailyRevenueSection } from "./DailyRevenueSection";
+import { ProcedureStatsSection } from "./ProcedureStatsSection";
 import {
   SPECIES_COLORS,
   CHART_BLUE,
@@ -33,6 +34,9 @@ export function StatsTab() {
     <div className="space-y-5 animate-results-in">
       {/* ── Daily Revenue ── */}
       <DailyRevenueSection />
+
+      {/* ── Filtered by period and procedures ── */}
+      <ProcedureStatsSection />
 
       {/* ── Row 1: Summary Cards ── */}
       <div className="grid grid-cols-3 gap-3">

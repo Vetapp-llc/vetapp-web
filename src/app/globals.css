@@ -19,6 +19,15 @@ body {
   min-height: 100%;
 }
 
+/* Clinics work on desktops, where the site read best at 125% browser
+   zoom. Sizes are in rem, so a larger root size scales the whole page the
+   same way; breakpoints stay on the browser's 16px. */
+@media (min-width: 1024px) {
+  html {
+    font-size: 125%;
+  }
+}
+
 body {
   margin: 0;
 }

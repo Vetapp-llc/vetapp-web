@@ -101,9 +101,16 @@ function money(v: number): string {
 
 const PRICE_RE = /^\d{1,9}(\.\d{1,2})?$/;
 
+/**
+ * The visit's shared notes: entered once at the top and saved on every
+ * procedure of the visit, so the procedure cards leave them out.
+ */
+const VISIT_NOTE_COLUMNS = ["anam", "diagn", "koment"];
+const CARD_SKIP = ["price", ...VISIT_NOTE_COLUMNS];
+
 /** Fields the vet must still fill before the visit can be paid. */
 function missingFields(proc: ProcedureEntry, form: ProcedureForm | undefined): FormField[] {
-  return missingFor(proc.values, form);
+  return missingFor(proc.values, form, CARD_SKIP);
 }
 
 function buildProcBody(proc: ProcedureEntry, visit: VisitData): Record<string, unknown> {
@@ -118,12 +125,12 @@ function buildProcBody(proc: ProcedureEntry, visit: VisitData): Record<string, u
     vetname: visit.vetId || undefined,
   };
   for (const [col, val] of Object.entries(proc.values)) {
-    if (col !== "price" && val.trim()) body[col] = val.trim();
+    if (!CARD_SKIP.includes(col) && val.trim()) body[col] = val.trim();
   }
-  // Visit-level notes apply to every procedure unless its own form set them.
-  if (!body.anam && visit.anam.trim()) body.anam = visit.anam.trim();
-  if (!body.diagn && visit.diagn.trim()) body.diagn = visit.diagn.trim();
-  if (!body.koment && visit.koment.trim()) body.koment = visit.koment.trim();
+  // The visit's notes go on every procedure of the visit.
+  if (visit.anam.trim()) body.anam = visit.anam.trim();
+  if (visit.diagn.trim()) body.diagn = visit.diagn.trim();
+  if (visit.koment.trim()) body.koment = visit.koment.trim();
   return body;
 }
 
@@ -267,7 +274,6 @@ export function VisitBuilder({
     const draft = loadDraft(petId);
     if (draft) {
       setVisitData({ ...draft, visitKey: draft.visitKey || genId() });
-      if (draft.procedures.length > 0) setExpandedCardId(draft.procedures[0].clientId);
       // Items already saved can only be paid for now, not edited.
       if (draft.procedures.some((p) => p.serverId)) setStep("pay");
     }
@@ -279,13 +285,16 @@ export function VisitBuilder({
     setDraftAvailable(false);
   }, [petId]);
 
+  // A procedure is added once per visit, collapsed: the vet opens a card
+  // only to fill in its details.
   const addProcedure = useCallback((form: ProcedureForm) => {
     const proc: ProcedureEntry = {
       clientId: genId(), tp: form.tp, tpname: form.name,
       price: matchPrice(form.name, prices ?? []), values: {},
     };
-    setVisitData((prev) => ({ ...prev, procedures: [...prev.procedures, proc] }));
-    setExpandedCardId(proc.clientId);
+    setVisitData((prev) => (
+      prev.procedures.some((p) => p.tp === form.tp) ? prev : { ...prev, procedures: [...prev.procedures, proc] }
+    ));
     setSearchQuery("");
     setSearchOpen(false);
   }, [prices]);
@@ -331,10 +340,11 @@ export function VisitBuilder({
   const discountAmount = round2((subtotal * discountPercent) / 100);
   const total = round2(Math.max(0, subtotal - discountAmount));
 
+  // Each procedure once per visit: the ones already added are not offered.
   const availableForms = useMemo(() => {
-    const seen = new Set<number>();
+    const seen = new Set<number>(visitData.procedures.map((p) => p.tp));
     return (forms ?? []).filter((f) => (seen.has(f.tp) ? false : (seen.add(f.tp), true)));
-  }, [forms]);
+  }, [forms, visitData.procedures]);
 
   const filteredForms = useMemo(() => {
     const q = searchQuery.toLowerCase();
@@ -428,7 +438,7 @@ export function VisitBuilder({
   const savedCount = visitData.procedures.filter((p) => p.serverId).length;
   const errorCount = visitData.procedures.filter((p) => p.error && !p.serverId).length;
   const input = "mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary";
-  const label = "text-[10px] font-semibold uppercase tracking-wider text-foreground-muted/50";
+  const label = "text-[0.625rem] font-semibold uppercase tracking-wider text-foreground-muted/50";
 
   /* ─── Render ─── */
 
@@ -521,6 +531,8 @@ export function VisitBuilder({
                   </div>
                 )}
               </div>
+
+              <p className="text-xs text-foreground-muted/60">{t("sharedNotesHint")}</p>
 
               <div className="border-t border-gray-100 pt-4" />
 
@@ -747,7 +759,7 @@ function ProcedureCard({ proc, form, expanded, onToggle, onPrice, onValue, onRem
             onChange={(e) => onPrice(e.target.value)}
             placeholder={pricesLoading ? "..." : t("price")}
             aria-label={t("price")}
-            className={`w-20 rounded-lg border px-2 py-1.5 text-right text-sm ${badPrice ? "border-red-400" : "border-gray-200"}`}
+            className={`w-24 rounded-lg border px-2 py-1.5 text-right text-sm ${badPrice ? "border-red-400" : "border-gray-200"}`}
           />
           <span className="text-sm text-foreground-muted">₾</span>
         </div>
@@ -755,7 +767,11 @@ function ProcedureCard({ proc, form, expanded, onToggle, onPrice, onValue, onRem
       </div>
       {expanded && (
         <div className="border-t border-gray-50 px-4 py-3">
-          {!form ? <p className="text-xs text-foreground-muted/60">{t("loading")}</p> : <ProcedureFieldInputs form={form} values={proc.values} onChange={onValue} />}
+          {!form ? <p className="text-xs text-foreground-muted/60">{t("loading")}</p> : (
+            form.fields.some((f) => !CARD_SKIP.includes(f.column))
+              ? <ProcedureFieldInputs form={form} values={proc.values} onChange={onValue} skip={CARD_SKIP} />
+              : <p className="text-xs text-foreground-muted/60">{t("noExtraFields")}</p>
+          )}
         </div>
       )}
     </div>

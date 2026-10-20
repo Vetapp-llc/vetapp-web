@@ -71,19 +71,19 @@ export function ShopView() {
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead><tr className="text-left text-[0.625rem] uppercase text-foreground-muted/60">
-                <th className="py-2">{t("product")}</th><th className="text-right">{t("inStock")}</th><th className="text-right">{t("unitPrice")}</th><th />
+                <th className="py-2 pr-3">{t("product")}</th><th className="pr-3 text-right">{t("inStock")}</th><th className="pr-3 text-right">{t("unitPrice")}</th><th />
               </tr></thead>
               <tbody>
                 {products.map((p) => {
                   const low = p.quantity <= LOW_STOCK;
                   return (
                     <tr key={p.id} className="border-t border-gray-50">
-                      <td className="py-2 font-medium text-primary-dark">{p.name}</td>
-                      <td className="whitespace-nowrap text-right">
+                      <td className="py-2 pr-3 font-medium text-primary-dark">{p.name}</td>
+                      <td className="whitespace-nowrap pr-3 text-right">
                         <span className={`font-bold tabular-nums ${low ? "text-red-600" : "text-primary-dark"}`}>{p.quantity}</span>
                         {low && <span className="ml-2 rounded-md bg-red-50 px-1.5 py-0.5 text-[0.6875rem] font-semibold text-red-600">{t("lowStock")}</span>}
                       </td>
-                      <td className="whitespace-nowrap text-right tabular-nums">{p.unitPrice} ₾</td>
+                      <td className="whitespace-nowrap pr-3 text-right tabular-nums">{p.unitPrice} ₾</td>
                       <td className="whitespace-nowrap text-right">
                         <Button small variant="ghost" onClick={() => setProduct(p)}>{t("edit")}</Button>
                         <ConfirmButton confirmLabel={t("confirmDelete")} onConfirm={() => run(async () => { await apiRequest("DELETE", `/shop/products/${p.id}`); refresh(); })}>{t("delete")}</ConfirmButton>
@@ -123,10 +123,10 @@ export function ShopView() {
               <tbody>
                 {data.data.map((s) => (
                   <tr key={s.id} className="border-t border-gray-50">
-                    <td className="py-2 whitespace-nowrap">{s.date}</td>
-                    <td>{s.name}</td>
-                    <td className="text-foreground-muted/70">{s.comment}</td>
-                    <td>{s.method === "ბარათი" ? t("card") : s.method ? t("cash") : ""}</td>
+                    <td className="py-2 pr-3 whitespace-nowrap">{s.date}</td>
+                    <td className="pr-3 whitespace-nowrap">{s.name}</td>
+                    <td className="min-w-[8rem] pr-3 text-foreground-muted/70">{saleComment(s, t)}</td>
+                    <td className="pr-3 whitespace-nowrap">{s.method === "ბარათი" ? t("card") : s.method ? t("cash") : ""}</td>
                     <td className="text-right font-semibold whitespace-nowrap">{s.price} ₾</td>
                     <td className="whitespace-nowrap text-right">
                       {/* A sale from stock is deleted, not edited: deleting returns its units. */}
@@ -248,6 +248,19 @@ function RealizeModal({ products, onClose, onSaved }: { products: Product[]; onC
       </div>
     </Modal>
   );
+}
+
+/**
+ * A sale's comment. Sales from stock store "N ცალი" (and the vet's own
+ * note after " · ") for the old site's sales list; here the units are
+ * shown in the viewer's language.
+ */
+function saleComment(s: Sale, t: ReturnType<typeof useTranslations<"features">>): string {
+  if (!s.productId || !s.quantity) return s.comment;
+  const prefix = `${s.quantity} ცალი`;
+  if (!s.comment.startsWith(prefix)) return s.comment;
+  const note = s.comment.slice(prefix.length).replace(/^ · /, "");
+  return [t("units", { count: s.quantity }), note].filter(Boolean).join(" · ");
 }
 
 /** A required field's label, marked with an asterisk. */

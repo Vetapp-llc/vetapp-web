@@ -480,7 +480,8 @@
     "notEnoughStock": "На складе только {count} шт.",
     "confirm": "Подтвердить",
     "requiredFields": "Обязательные поля",
-    "visitNotesHint": "Сохраняется для всех процедур этого дня ({count})"
+    "visitNotesHint": "Сохраняется для всех процедур этого дня ({count})",
+    "units": "{count} шт."
   },
   "menu": {
     "shop": "Продажи",

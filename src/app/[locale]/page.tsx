@@ -16,8 +16,9 @@ export default function LandingPage() {
           <Image
             src="/images/vetapp-logo.png"
             alt="VetApp"
+            priority
             width={100}
-            height={30}
+            height={97}
             className="invert"
           />
           <div className="flex items-center gap-3">

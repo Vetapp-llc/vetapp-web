@@ -480,7 +480,8 @@
     "notEnoughStock": "მარაგში მხოლოდ {count} ცალია",
     "confirm": "დადასტურება",
     "requiredFields": "სავალდებულო ველები",
-    "visitNotesHint": "ინახება ამ დღის ყველა პროცედურაზე ({count})"
+    "visitNotesHint": "ინახება ამ დღის ყველა პროცედურაზე ({count})",
+    "units": "{count} ცალი"
   },
   "menu": {
     "shop": "მაღაზია",

@@ -25,8 +25,9 @@ function AdminNavBar() {
             <Image
               src="/images/vetapp-logo.png"
               alt="VetApp"
+              priority
               width={80}
-              height={24}
+              height={78}
               className="invert"
             />
           </Link>

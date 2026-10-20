@@ -480,7 +480,8 @@
     "notEnoughStock": "Only {count} in stock",
     "confirm": "Confirm",
     "requiredFields": "Required fields",
-    "visitNotesHint": "Saved on every procedure of this day ({count})"
+    "visitNotesHint": "Saved on every procedure of this day ({count})",
+    "units": "{count} pcs"
   },
   "menu": {
     "shop": "Shop sales",

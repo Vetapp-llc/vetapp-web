@@ -52,8 +52,8 @@
   "dashboard": {
     "logout": "Log out",
     "searchTitle": "Owner Lookup",
-    "searchDesc": "Search by personal ID to find a pet owner",
-    "searchPlaceholder": "Enter personal ID",
+    "searchDesc": "Search by personal ID, owner or pet name, or phone",
+    "searchPlaceholder": "Personal ID, owner or pet name, phone",
     "search": "Search",
     "ownerInfo": "Owner Information",
     "name": "Full Name",
@@ -64,7 +64,7 @@
     "noPets": "No pets registered yet",
     "addPet": "Add Pet",
     "notFound": "Owner not found",
-    "notFoundDesc": "No owner found with this personal ID. Would you like to create a new record?",
+    "notFoundDesc": "No matching owner or pet. Would you like to create a new record?",
     "createOwner": "Create New Owner",
     "petName": "Pet Name",
     "species": "Species",
@@ -143,7 +143,7 @@
     "ownersTab": "Owners",
     "searchTab": "Search",
     "searchPets": "Search by name, owner, chip, or phone...",
-    "searchOwners": "Search by name, phone, email, or ID...",
+    "searchOwners": "Search by owner or pet name, phone, email, or ID...",
     "totalResults": "{count, plural, one {# result} other {# results}}",
     "pet": "pet",
     "petsPlural": "pets",
@@ -479,7 +479,8 @@
     "unitsLeft": "{count} left",
     "notEnoughStock": "Only {count} in stock",
     "confirm": "Confirm",
-    "requiredFields": "Required fields"
+    "requiredFields": "Required fields",
+    "visitNotesHint": "Saved on every procedure of this day ({count})"
   },
   "menu": {
     "shop": "Shop sales",

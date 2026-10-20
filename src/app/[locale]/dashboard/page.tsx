@@ -331,7 +331,8 @@ function SearchTab({ onViewOwner, onAdd }: { onViewOwner: (personalId: string) =
             <h3 className="text-lg font-bold text-primary-dark">{t("notFound")}</h3>
             <p className="mt-1.5 text-sm text-foreground-muted/60">{t("notFoundDesc")}</p>
             <button
-              onClick={() => onAdd(activeSearch)}
+              // Only an ID-like search prefills the new owner's personal ID.
+              onClick={() => onAdd(/^[0-9A-Za-z]+$/.test(activeSearch) ? activeSearch : undefined)}
               className="mt-4 inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-bold text-white shadow-[0_4px_16px_rgba(4,114,216,0.25)] transition-all hover:bg-primary/90 active:scale-[0.97] cursor-pointer"
             >
               <svg className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" /></svg>

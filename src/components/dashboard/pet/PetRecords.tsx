@@ -72,6 +72,7 @@ export function PetRecords({ petId, species }: { petId: string; species: string 
   const { data: staff } = useStaff();
   const invalidate = useInvalidatePet();
   const [editing, setEditing] = useState<ProcedureRow | null>(null);
+  const [editingDay, setEditingDay] = useState<DayGroup | null>(null);
   const [paying, setPaying] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
 
@@ -123,9 +124,12 @@ export function PetRecords({ petId, species }: { petId: string; species: string 
                     {[vets.join(", "), t("procedureCount", { count: day.records.length }), `${sum} ₾`].filter(Boolean).join(" · ")}
                   </span>
                 </header>
-                {Object.keys(day.shared).length > 0 && (
-                  <div className="border-b border-gray-100 px-4 py-3">
-                    <p className="mb-1 text-[0.625rem] font-semibold uppercase tracking-wider text-foreground-muted/60">{t("visitNotes")}</p>
+                <div className="border-b border-gray-100 px-4 py-3">
+                  <div className="mb-1 flex items-center justify-between gap-2">
+                    <p className="text-[0.625rem] font-semibold uppercase tracking-wider text-foreground-muted/60">{t("visitNotes")}</p>
+                    <button onClick={() => setEditingDay(day)} className="text-xs font-semibold text-primary hover:underline cursor-pointer">{t("edit")}</button>
+                  </div>
+                  {Object.keys(day.shared).length > 0 ? (
                     <dl className="space-y-1 text-sm">
                       {VISIT_NOTES.filter((n) => day.shared[n.column]).map((n) => (
                         <div key={n.column} className="flex gap-2">
@@ -134,8 +138,10 @@ export function PetRecords({ petId, species }: { petId: string; species: string 
                         </div>
                       ))}
                     </dl>
-                  </div>
-                )}
+                  ) : (
+                    <p className="text-xs text-foreground-muted/50">—</p>
+                  )}
+                </div>
                 <div className="divide-y divide-gray-100">
                   {day.records.map((r) => (
                     <RecordItem
@@ -165,6 +171,13 @@ export function PetRecords({ petId, species }: { petId: string; species: string 
           staff={staff ?? []}
           onClose={() => setEditing(null)}
           onSaved={() => { setEditing(null); invalidate(petId); }}
+        />
+      )}
+      {editingDay && (
+        <DayNotesModal
+          day={editingDay}
+          onClose={() => setEditingDay(null)}
+          onSaved={() => { setEditingDay(null); invalidate(petId); }}
         />
       )}
       {paying && (
@@ -337,15 +350,17 @@ function EditRecordModal({
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const paid = record.phone === "1";
-  const hidden = ["price", "chip"];
+  // The visit's notes are edited for the whole day (DayNotesModal).
+  const hidden = ["price", "chip", ...VISIT_NOTES.map((n) => n.column)];
   const missing = missingFields(values, form, hidden);
   const badPrice = values.price?.trim() && !PRICE_RE.test(values.price.trim());
 
   // Only the columns the form knows plus the shared ones are sent.
   const editable = useMemo(() => {
-    const cols = new Set(["date", "date2", "price", "vetname", "anam", "diagn", "koment", "coment"]);
+    const cols = new Set(["date", "date2", "price", "vetname", "coment"]);
     for (const f of form?.fields ?? []) cols.add(f.column);
     cols.delete("chip"); // the chip number lives in coment on saved records
+    for (const n of VISIT_NOTES) cols.delete(n.column);
     return [...cols];
   }, [form]);
 
@@ -393,6 +408,59 @@ function EditRecordModal({
         <div className="flex justify-end gap-2">
           <Button variant="secondary" onClick={onClose}>{t("cancel")}</Button>
           <Button onClick={save} disabled={saving || missing.length > 0 || !!badPrice}>{saving ? t("saving") : t("save")}</Button>
+        </div>
+      </div>
+    </Modal>
+  );
+}
+
+/** Edits the visit's notes once and saves them on each of the day's procedures. */
+function DayNotesModal({ day, onClose, onSaved }: { day: DayGroup; onClose: () => void; onSaved: () => void }) {
+  const t = useTranslations("features");
+  const tv = useTranslations("visit");
+  const first = recordValues(day.records[0]);
+  const [values, setValues] = useState<Record<string, string>>(() =>
+    Object.fromEntries(VISIT_NOTES.map((n) => [n.column, day.shared[n.column] ?? first[n.column] ?? ""])),
+  );
+  const [saving, setSaving] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  const save = async () => {
+    setSaving(true);
+    setErr(null);
+    try {
+      for (const r of day.records) {
+        const current = recordValues(r);
+        const body: Record<string, string> = {};
+        for (const n of VISIT_NOTES) if ((current[n.column] ?? "") !== values[n.column]) body[n.column] = values[n.column];
+        if (Object.keys(body).length > 0) await apiRequest("PUT", `/procedures/${r.id}`, body);
+      }
+      onSaved();
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : t("error"));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Modal open title={`${t("visitNotes")} — ${day.date}`} onClose={onClose}>
+      <div className="space-y-3">
+        {err && <Notice>{err}</Notice>}
+        {VISIT_NOTES.map((n) => (
+          <Field key={n.column} label={tv(n.label)}>
+            <textarea
+              rows={2}
+              className={inputClass}
+              value={values[n.column]}
+              onChange={(e) => setValues({ ...values, [n.column]: e.target.value })}
+            />
+          </Field>
+        ))}
+        <p className="text-xs text-foreground-muted/60">{t("visitNotesHint", { count: day.records.length })}</p>
+        <div className="flex justify-end gap-2">
+          <Button variant="secondary" onClick={onClose}>{t("cancel")}</Button>
+          <Button onClick={save} disabled={saving}>{saving ? t("saving") : t("save")}</Button>
         </div>
       </div>
     </Modal>

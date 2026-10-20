@@ -757,7 +757,7 @@ function ProcedureCard({ proc, form, expanded, onToggle, onPrice, onValue, onRem
           <input
             type="text" inputMode="decimal" value={proc.price}
             onChange={(e) => onPrice(e.target.value)}
-            placeholder={pricesLoading ? "..." : t("price")}
+            placeholder={pricesLoading ? "..." : "0"}
             aria-label={t("price")}
             className={`w-24 rounded-lg border px-2 py-1.5 text-right text-sm ${badPrice ? "border-red-400" : "border-gray-200"}`}
           />

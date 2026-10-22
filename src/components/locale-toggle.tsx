@@ -107,7 +107,7 @@ export function LocaleToggle() {
                 }`}
               >
                 {l.label}
-                <span className="text-[10px] font-bold text-gray-400">
+                <span className="text-[0.625rem] font-bold text-gray-400">
                   {l.short}
                 </span>
               </button>

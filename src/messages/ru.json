@@ -52,8 +52,8 @@
   "dashboard": {
     "logout": "Выйти",
     "searchTitle": "Поиск владельца",
-    "searchDesc": "Найдите владельца питомца по личному номеру",
-    "searchPlaceholder": "Введите личный номер",
+    "searchDesc": "Поиск по личному номеру, имени владельца, кличке или телефону",
+    "searchPlaceholder": "Личный номер, имя владельца или кличка, телефон",
     "search": "Поиск",
     "ownerInfo": "Информация о владельце",
     "name": "Ф. И. О.",
@@ -64,7 +64,7 @@
     "noPets": "Питомцы пока не зарегистрированы",
     "addPet": "Добавить питомца",
     "notFound": "Владелец не найден",
-    "notFoundDesc": "Владелец с таким личным номером не найден. Создать новую запись?",
+    "notFoundDesc": "Владелец или питомец не найден. Создать новую запись?",
     "createOwner": "Создать владельца",
     "petName": "Кличка",
     "species": "Вид",
@@ -135,14 +135,15 @@
     "validationChipDigits": "Номер чипа может содержать только цифры",
     "validationEmailInvalid": "Неверный формат эл. почты",
     "statusAdopted": "Пристроенный",
-    "statusService": "Служебный"
+    "statusService": "Служебный",
+    "home": "Главная"
   },
   "clinic": {
     "petsTab": "Питомцы",
     "ownersTab": "Владельцы",
     "searchTab": "Поиск",
     "searchPets": "Поиск по кличке, владельцу, чипу или телефону...",
-    "searchOwners": "Поиск по имени, телефону, почте или номеру...",
+    "searchOwners": "Поиск по имени владельца, кличке, телефону, почте или номеру...",
     "totalResults": "{count, plural, one {# результат} few {# результата} many {# результатов} other {# результата}}",
     "pet": "питомец",
     "petsPlural": "питомцев",
@@ -203,7 +204,17 @@
     "monthlyBreakdown": "Разбивка по месяцам",
     "date": "Дата",
     "procedures": "Процедуры",
-    "newVisit": "Новый приём"
+    "newVisit": "Новый приём",
+    "filteredStats": "Статистика по периоду и процедурам",
+    "period": {
+      "day": "1 день",
+      "month": "1 месяц",
+      "3months": "3 месяца",
+      "6months": "6 месяцев",
+      "year": "1 год"
+    },
+    "periodEnd": "По",
+    "noProceduresInPeriod": "В этот период процедур нет"
   },
   "visit": {
     "date": "Дата",
@@ -267,7 +278,9 @@
     "vetMe": "Я",
     "paymentFailed": "Оплата не прошла",
     "requiredMissing": "Заполните обязательные поля",
-    "remove": "Удалить"
+    "remove": "Удалить",
+    "sharedNotesHint": "Анамнез, диагноз и заметка вводятся один раз и сохраняются для всех процедур визита.",
+    "noExtraFields": "Дополнительных полей нет"
   },
   "petProfile": {
     "title": "Ветеринарный паспорт",
@@ -447,7 +460,28 @@
     "otherProcedure": "Другое (введите название)",
     "operationName": "Название операции / процедуры",
     "addProcedure": "Добавить процедуру",
-    "birthShort": "Д.р."
+    "birthShort": "Д.р.",
+    "visitNotes": "Дополнительно",
+    "procedureCount": "{count, plural, one {# процедура} few {# процедуры} other {# процедур}}",
+    "addProduct": "Добавить товар",
+    "realize": "Реализация",
+    "stock": "Склад",
+    "noProducts": "На складе нет товаров — добавьте через «Добавить товар»",
+    "inStock": "Остаток",
+    "unitPrice": "Цена за единицу",
+    "lowStock": "Нужно пополнить",
+    "sales": "Продажи",
+    "confirmDeleteSale": "Удалить? Количество вернётся на склад",
+    "productName": "Название товара",
+    "quantityInStock": "Количество на складе",
+    "quantity": "Количество",
+    "selectProduct": "Выберите товар",
+    "unitsLeft": "{count} шт.",
+    "notEnoughStock": "На складе только {count} шт.",
+    "confirm": "Подтвердить",
+    "requiredFields": "Обязательные поля",
+    "visitNotesHint": "Сохраняется для всех процедур этого дня ({count})",
+    "units": "{count} шт."
   },
   "menu": {
     "shop": "Продажи",

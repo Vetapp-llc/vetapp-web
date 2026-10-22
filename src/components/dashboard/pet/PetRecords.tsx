@@ -28,6 +28,37 @@ function formFor(forms: ProcedureForm[] | undefined, tp: number) {
   return forms?.find((f) => f.tp === tp);
 }
 
+/** The notes a visit saves on each of its procedures (see VisitBuilder). */
+const VISIT_NOTES = [
+  { column: "anam", label: "anamnesis" },
+  { column: "diagn", label: "diagnosis" },
+  { column: "koment", label: "vetNotes" },
+] as const;
+
+interface DayGroup {
+  date: string;
+  records: ProcedureRow[];
+  /** Notes every procedure of the day shares, shown once for the day. */
+  shared: Record<string, string>;
+}
+
+// Records come newest first; one day's procedures form one block.
+function groupByDay(records: ProcedureRow[]): DayGroup[] {
+  const groups: DayGroup[] = [];
+  for (const r of records) {
+    const last = groups[groups.length - 1];
+    if (last && last.date === r.date) last.records.push(r);
+    else groups.push({ date: r.date, records: [r], shared: {} });
+  }
+  for (const g of groups) {
+    for (const { column } of VISIT_NOTES) {
+      const first = (recordValues(g.records[0])[column] ?? "").trim();
+      if (first && g.records.every((r) => (recordValues(r)[column] ?? "").trim() === first)) g.shared[column] = first;
+    }
+  }
+  return groups;
+}
+
 export function PetRecords({ petId, species }: { petId: string; species: string }) {
   const t = useTranslations("features");
   const tv = useTranslations("visit");
@@ -41,10 +72,12 @@ export function PetRecords({ petId, species }: { petId: string; species: string 
   const { data: staff } = useStaff();
   const invalidate = useInvalidatePet();
   const [editing, setEditing] = useState<ProcedureRow | null>(null);
+  const [editingDay, setEditingDay] = useState<DayGroup | null>(null);
   const [paying, setPaying] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
 
   const records = data?.data ?? [];
+  const days = useMemo(() => groupByDay(records), [records]);
   const unpaid = unpaidData?.data ?? [];
   const vetName = (id: string) => staff?.find((s) => String(s.id) === id)?.first_name ?? "";
 
@@ -78,20 +111,55 @@ export function PetRecords({ petId, species }: { petId: string; species: string 
       {records.length === 0 ? (
         <Empty>{t("none")}</Empty>
       ) : (
-        <div className="space-y-2">
+        <div className="space-y-3">
           <p className="text-xs text-foreground-muted/50">{data?.total ?? records.length}</p>
-          {records.map((r) => (
-            <RecordItem
-              key={r.id}
-              record={r}
-              petId={petId}
-              form={formFor(forms, r.tp)}
-              vetName={vetName(r.vetname)}
-              locale={locale}
-              onEdit={() => setEditing(r)}
-              onDelete={() => remove(r)}
-            />
-          ))}
+          {days.map((day) => {
+            const sum = day.records.reduce((s, r) => s + (parseFloat(r.price) || 0), 0);
+            const vets = [...new Set(day.records.map((r) => vetName(r.vetname)).filter(Boolean))];
+            return (
+              <section key={`${day.date}-${day.records[0].id}`} className="overflow-hidden rounded-xl border border-gray-100 bg-white">
+                <header className="flex flex-wrap items-baseline justify-between gap-2 bg-gray-50/80 px-4 py-2.5">
+                  <span className="text-sm font-bold text-primary-dark">{day.date}</span>
+                  <span className="text-xs text-foreground-muted/60">
+                    {[vets.join(", "), t("procedureCount", { count: day.records.length }), `${sum} ₾`].filter(Boolean).join(" · ")}
+                  </span>
+                </header>
+                <div className="border-b border-gray-100 px-4 py-3">
+                  <div className="mb-1 flex items-center justify-between gap-2">
+                    <p className="text-[0.625rem] font-semibold uppercase tracking-wider text-foreground-muted/60">{t("visitNotes")}</p>
+                    <button onClick={() => setEditingDay(day)} className="text-xs font-semibold text-primary hover:underline cursor-pointer">{t("edit")}</button>
+                  </div>
+                  {Object.keys(day.shared).length > 0 ? (
+                    <dl className="space-y-1 text-sm">
+                      {VISIT_NOTES.filter((n) => day.shared[n.column]).map((n) => (
+                        <div key={n.column} className="flex gap-2">
+                          <dt className="shrink-0 text-foreground-muted/70">{tv(n.label)}:</dt>
+                          <dd className="whitespace-pre-line font-medium text-primary-dark">{day.shared[n.column]}</dd>
+                        </div>
+                      ))}
+                    </dl>
+                  ) : (
+                    <p className="text-xs text-foreground-muted/50">—</p>
+                  )}
+                </div>
+                <div className="divide-y divide-gray-100">
+                  {day.records.map((r) => (
+                    <RecordItem
+                      key={r.id}
+                      record={r}
+                      petId={petId}
+                      form={formFor(forms, r.tp)}
+                      vetName={vets.length > 1 ? vetName(r.vetname) : ""}
+                      hidden={Object.keys(day.shared)}
+                      locale={locale}
+                      onEdit={() => setEditing(r)}
+                      onDelete={() => remove(r)}
+                    />
+                  ))}
+                </div>
+              </section>
+            );
+          })}
           {data && data.totalPages > 1 && <Pagination page={page} totalPages={data.totalPages} onPageChange={setPage} />}
         </div>
       )}
@@ -103,6 +171,13 @@ export function PetRecords({ petId, species }: { petId: string; species: string 
           staff={staff ?? []}
           onClose={() => setEditing(null)}
           onSaved={() => { setEditing(null); invalidate(petId); }}
+        />
+      )}
+      {editingDay && (
+        <DayNotesModal
+          day={editingDay}
+          onClose={() => setEditingDay(null)}
+          onSaved={() => { setEditingDay(null); invalidate(petId); }}
         />
       )}
       {paying && (
@@ -120,12 +195,15 @@ export function PetRecords({ petId, species }: { petId: string; species: string 
 }
 
 function RecordItem({
-  record: r, petId, form, vetName, locale, onEdit, onDelete,
+  record: r, petId, form, vetName, hidden, locale, onEdit, onDelete,
 }: {
   record: ProcedureRow;
   petId: string;
   form: ProcedureForm | undefined;
+  /** Shown only when the day's procedures were done by different vets. */
   vetName: string;
+  /** Columns the day block already shows. */
+  hidden: string[];
   locale: string;
   onEdit: () => void;
   onDelete: () => void;
@@ -135,10 +213,12 @@ function RecordItem({
   const [open, setOpen] = useState(false);
   const paid = r.phone === "1";
   const values = recordValues(r);
-  const shown = (form?.fields ?? []).filter((f) => f.column !== "price" && (values[f.column] ?? "").trim());
+  const shown = (form?.fields ?? []).filter(
+    (f) => f.column !== "price" && !hidden.includes(f.column) && (values[f.column] ?? "").trim(),
+  );
 
   return (
-    <div className="rounded-xl border border-gray-100 bg-white">
+    <div>
       <button onClick={() => setOpen(!open)} className="flex w-full items-center gap-3 px-4 py-3 text-left cursor-pointer">
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
@@ -147,8 +227,8 @@ function RecordItem({
             <PaidBadge paid={paid} paidLabel={t("paid")} unpaidLabel={t("unpaid")} />
           </div>
           <p className="mt-0.5 text-xs text-foreground-muted/60">
-            {r.date}{vetName ? ` · ${vetName}` : ""}{r.price ? ` · ${r.price} ₾` : ""}
-            {r.date2 && /^\d{4}-/.test(r.date2) ? ` · ${t("nextDue")}: ${r.date2}` : ""}
+            {[vetName, r.price ? `${r.price} ₾` : "", r.date2 && /^\d{4}-/.test(r.date2) ? `${t("nextDue")}: ${r.date2}` : ""]
+              .filter(Boolean).join(" · ")}
           </p>
         </div>
         <span className={`text-foreground-muted/40 transition-transform ${open ? "rotate-180" : ""}`}>▾</span>
@@ -270,15 +350,17 @@ function EditRecordModal({
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const paid = record.phone === "1";
-  const hidden = ["price", "chip"];
+  // The visit's notes are edited for the whole day (DayNotesModal).
+  const hidden = ["price", "chip", ...VISIT_NOTES.map((n) => n.column)];
   const missing = missingFields(values, form, hidden);
   const badPrice = values.price?.trim() && !PRICE_RE.test(values.price.trim());
 
   // Only the columns the form knows plus the shared ones are sent.
   const editable = useMemo(() => {
-    const cols = new Set(["date", "date2", "price", "vetname", "anam", "diagn", "koment", "coment"]);
+    const cols = new Set(["date", "date2", "price", "vetname", "coment"]);
     for (const f of form?.fields ?? []) cols.add(f.column);
     cols.delete("chip"); // the chip number lives in coment on saved records
+    for (const n of VISIT_NOTES) cols.delete(n.column);
     return [...cols];
   }, [form]);
 
@@ -326,6 +408,59 @@ function EditRecordModal({
         <div className="flex justify-end gap-2">
           <Button variant="secondary" onClick={onClose}>{t("cancel")}</Button>
           <Button onClick={save} disabled={saving || missing.length > 0 || !!badPrice}>{saving ? t("saving") : t("save")}</Button>
+        </div>
+      </div>
+    </Modal>
+  );
+}
+
+/** Edits the visit's notes once and saves them on each of the day's procedures. */
+function DayNotesModal({ day, onClose, onSaved }: { day: DayGroup; onClose: () => void; onSaved: () => void }) {
+  const t = useTranslations("features");
+  const tv = useTranslations("visit");
+  const first = recordValues(day.records[0]);
+  const [values, setValues] = useState<Record<string, string>>(() =>
+    Object.fromEntries(VISIT_NOTES.map((n) => [n.column, day.shared[n.column] ?? first[n.column] ?? ""])),
+  );
+  const [saving, setSaving] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  const save = async () => {
+    setSaving(true);
+    setErr(null);
+    try {
+      for (const r of day.records) {
+        const current = recordValues(r);
+        const body: Record<string, string> = {};
+        for (const n of VISIT_NOTES) if ((current[n.column] ?? "") !== values[n.column]) body[n.column] = values[n.column];
+        if (Object.keys(body).length > 0) await apiRequest("PUT", `/procedures/${r.id}`, body);
+      }
+      onSaved();
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : t("error"));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Modal open title={`${t("visitNotes")} — ${day.date}`} onClose={onClose}>
+      <div className="space-y-3">
+        {err && <Notice>{err}</Notice>}
+        {VISIT_NOTES.map((n) => (
+          <Field key={n.column} label={tv(n.label)}>
+            <textarea
+              rows={2}
+              className={inputClass}
+              value={values[n.column]}
+              onChange={(e) => setValues({ ...values, [n.column]: e.target.value })}
+            />
+          </Field>
+        ))}
+        <p className="text-xs text-foreground-muted/60">{t("visitNotesHint", { count: day.records.length })}</p>
+        <div className="flex justify-end gap-2">
+          <Button variant="secondary" onClick={onClose}>{t("cancel")}</Button>
+          <Button onClick={save} disabled={saving}>{saving ? t("saving") : t("save")}</Button>
         </div>
       </div>
     </Modal>

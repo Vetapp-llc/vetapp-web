@@ -56,7 +56,7 @@ export function fieldLabel(f: FormField, t: VisitT): string {
 }
 
 const input = "mt-1 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary";
-const label = "text-[10px] font-semibold uppercase tracking-wider text-foreground-muted/50";
+const label = "text-[0.625rem] font-semibold uppercase tracking-wider text-foreground-muted/50";
 
 export function ProcedureFieldInputs({
   form, values, onChange, skip = ["price"],

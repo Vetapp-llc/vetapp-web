@@ -118,3 +118,28 @@ export function useYearlyClinicStats(year: string, clinic?: string) {
     placeholderData: keepPreviousData,
   });
 }
+
+export interface RangeProcedure { tp: string; tpname: string; count: number; total: string }
+export interface RangeClinicStats {
+  from: string;
+  to: string;
+  count: number;
+  total: string;
+  procedures: RangeProcedure[];
+  types: RangeProcedure[];
+  breakdown: { period: string; count: number; total: string }[];
+  byMonth: boolean;
+}
+
+/** Procedure counts and revenue between two dates, optionally for some types. */
+export function useRangeClinicStats(from: string, to: string, tps: string[]) {
+  const token = getToken();
+  const tp = [...tps].sort().join(",");
+  return useQuery<RangeClinicStats>({
+    queryKey: ["clinic-range-stats", from, to, tp],
+    queryFn: () => fetchJson(`/stats/clinic/range${qs({ from, to, tp: tp || undefined })}`),
+    enabled: !!token && !!from && !!to,
+    staleTime: 5 * 60 * 1000,
+    placeholderData: keepPreviousData,
+  });
+}

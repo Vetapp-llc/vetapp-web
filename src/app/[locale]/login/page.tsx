@@ -77,8 +77,9 @@ export default function LoginPage() {
             <Image
               src="/images/vetapp-logo.png"
               alt="VetApp"
+              priority
               width={120}
-              height={36}
+              height={116}
               className="invert"
             />
           </Link>

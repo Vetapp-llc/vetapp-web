@@ -54,7 +54,7 @@ export function MembersPanel() {
           <p className="mb-2 text-xs text-foreground-muted/60">{data.total}</p>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead><tr className="text-left text-[10px] uppercase text-foreground-muted/60">
+              <thead><tr className="text-left text-[0.625rem] uppercase text-foreground-muted/60">
                 <th className="py-2">{t("name")}</th><th>{t("personalId")}</th><th>{t("email")}</th><th>{t("phone")}</th>
                 <th>{group === 1 ? t("pets") : t("clinic")}</th><th>{t("lastLogin")}</th><th />
               </tr></thead>
@@ -93,7 +93,7 @@ export function TransactionsPanel() {
         <Card>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead><tr className="text-left text-[10px] uppercase text-foreground-muted/60">
+              <thead><tr className="text-left text-[0.625rem] uppercase text-foreground-muted/60">
                 <th className="py-2">{t("date")}</th><th>{t("patient")}</th><th>{t("amount")}</th><th>{t("status")}</th><th>{t("provider")}</th><th>{t("order")}</th>
               </tr></thead>
               <tbody>
@@ -102,7 +102,7 @@ export function TransactionsPanel() {
                     <td className="py-2 whitespace-nowrap">{x.created_at ?? ""}</td>
                     <td>{x.pet_name || x.pet_id}</td>
                     <td className="whitespace-nowrap">{x.price} {x.currency}</td>
-                    <td><span className={`rounded-md px-1.5 py-0.5 text-[10px] font-bold ${x.status === "success" ? "bg-emerald-50 text-emerald-700" : x.status === "failed" ? "bg-red-50 text-red-700" : "bg-gray-100 text-gray-600"}`}>{x.status}</span></td>
+                    <td><span className={`rounded-md px-1.5 py-0.5 text-[0.625rem] font-bold ${x.status === "success" ? "bg-emerald-50 text-emerald-700" : x.status === "failed" ? "bg-red-50 text-red-700" : "bg-gray-100 text-gray-600"}`}>{x.status}</span></td>
                     <td>{x.provider}</td>
                     <td className="max-w-[12rem] truncate text-xs text-foreground-muted/70">{x.order_id}</td>
                   </tr>

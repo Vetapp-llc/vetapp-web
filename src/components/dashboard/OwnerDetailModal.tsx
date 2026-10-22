@@ -81,13 +81,13 @@ export function OwnerDetailModal({ open, personalId, onClose, onViewPet }: Owner
               <div className="mt-4 grid grid-cols-2 gap-3">
                 {owner.phone && (
                   <div className="rounded-xl bg-white/80 px-3 py-2">
-                    <p className="text-[10px] font-semibold uppercase tracking-wider text-foreground-muted/50">{t("phone")}</p>
+                    <p className="text-[0.625rem] font-semibold uppercase tracking-wider text-foreground-muted/50">{t("phone")}</p>
                     <p className="text-sm font-semibold text-primary-dark">{owner.phone}</p>
                   </div>
                 )}
                 {owner.email && (
                   <div className="rounded-xl bg-white/80 px-3 py-2">
-                    <p className="text-[10px] font-semibold uppercase tracking-wider text-foreground-muted/50">{t("email")}</p>
+                    <p className="text-[0.625rem] font-semibold uppercase tracking-wider text-foreground-muted/50">{t("email")}</p>
                     <p className="text-sm font-semibold text-primary-dark truncate">{owner.email}</p>
                   </div>
                 )}

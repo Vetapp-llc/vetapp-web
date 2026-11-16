@@ -490,5 +490,27 @@
     "appointments": "Appointments",
     "promo": "Promo sign-ups",
     "account": "My account"
+  },
+  "deletionRequests": {
+    "title": "Account deletion",
+    "pendingCount": "Pending account-deletion requests: {count}. Complete each within 7 days.",
+    "view": "View requests",
+    "identity": "Personal ID",
+    "account": "Account",
+    "due": "Complete by",
+    "requested": "Requested",
+    "checks": "Completion checks",
+    "legacy_erased": "The account and associated owner data have been erased from the old clinic website, subject to required record retention.",
+    "new_data_erased": "The account and associated owner data, private files and sharing access have been erased from the new app system.",
+    "sessions_revoked": "Old website sessions and app sessions have been revoked.",
+    "confirmation_sent": "Completion has been confirmed to the owner at the email above.",
+    "complete": "Record completion",
+    "saving": "Saving…",
+    "error": "Could not update this request.",
+    "instructions": "Check this queue daily. Complete each request in both systems within 7 days of receipt, then email the owner. Follow the account-deletion runbook for required retention and private file removal.",
+    "notice": "This screen records completion only. It does not delete accounts or send email. Disabling an account is not deletion. Complete all four steps before closing the request.",
+    "retry": "Try again",
+    "loading": "Loading requests…",
+    "empty": "No pending deletion requests."
   }
 }

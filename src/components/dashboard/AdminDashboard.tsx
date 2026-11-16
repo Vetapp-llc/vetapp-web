@@ -15,6 +15,7 @@ import {
   Section,
 } from "@/components/dashboard/shared";
 import type { ClinicStats } from "@/lib/types/api";
+import { AccountDeletionNotice, AccountDeletionRequests } from "./AccountDeletionRequests";
 
 /* ─── Clinic Drill-down View ─── */
 function ClinicDrillDown({
@@ -254,6 +255,7 @@ export function AdminDashboard() {
   if (tab === "members") body = <MembersPanel />;
   else if (tab === "transactions") body = <TransactionsPanel />;
   else if (tab === "sms") body = <SmsPanel />;
+  else if (tab === "deletions") body = <AccountDeletionRequests />;
   else
     body = selectedClinic ? (
       <ClinicDrillDown
@@ -270,6 +272,7 @@ export function AdminDashboard() {
   return (
     <>
       <AdminTabs value={tab} onChange={setTab} />
+      {tab !== "deletions" && <AccountDeletionNotice onOpen={() => setTab("deletions")} />}
       {body}
     </>
   );

@@ -182,7 +182,8 @@ export function SmsPanel() {
 
 export function AdminTabs({ value, onChange }: { value: string; onChange: (v: string) => void }) {
   const t = useTranslations("features");
-  const tabs: [string, string][] = [["stats", "📊"], ["members", t("members")], ["transactions", t("transactions")], ["sms", t("sms")]];
+  const td = useTranslations("deletionRequests");
+  const tabs: [string, string][] = [["stats", "📊"], ["members", t("members")], ["transactions", t("transactions")], ["sms", t("sms")], ["deletions", td("title")]];
   return (
     <div className="mb-4 flex flex-wrap gap-1.5">
       {tabs.map(([id, label]) => (
